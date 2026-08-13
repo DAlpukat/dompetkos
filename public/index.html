@@ -2034,23 +2034,57 @@
           .join("");
       }
 
+      function daysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+      }
+
+      function getMonthlyBudget(catId) {
+        const b = state.budgets[catId];
+        if (!b) return 0;
+        if (b.type === "daily") {
+          const today = new Date();
+          const isThisMonth =
+            today.getMonth() === state.currentMonth &&
+            today.getFullYear() === state.currentYear;
+          if (isThisMonth) {
+            const remainingDays =
+              daysInMonth(state.currentYear, state.currentMonth) -
+              today.getDate() +
+              1;
+            return b.amount * Math.max(1, remainingDays);
+          }
+          return b.amount * daysInMonth(state.currentYear, state.currentMonth);
+        }
+        return b.amount || 0;
+      }
+
       function renderBudget() {
         const grid = document.getElementById("budgetGrid");
         const income = state.transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
         const expense = state.transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
         const balance = income - expense;
-        const totalBudget = Object.values(state.budgets).reduce((s, b) => s + (b.amount || 0), 0);
+        const totalBudget = state.categories.filter(c => c.type === "expense").reduce((s, c) => s + getMonthlyBudget(c.id), 0);
         const remaining = balance - totalBudget;
 
         grid.innerHTML = state.categories.filter(c => c.type === "expense").map(cat => {
           const spent = state.transactions.filter(t => t.category === cat.id).reduce((s, t) => s + t.amount, 0);
-          const limit = state.budgets[cat.id]?.amount || 0;
-          const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
-          return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">Limit: ${fmt(limit)}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(limit - spent)} sisa</span></div></div>`;
+          const monthlyLimit = getMonthlyBudget(cat.id);
+          const budget = state.budgets[cat.id];
+          const percent = monthlyLimit > 0 ? Math.min(100, (spent / monthlyLimit) * 100) : 0;
+          const limitText = budget
+            ? budget.type === "daily"
+              ? `${fmt(budget.amount)}/hari (${fmtShort(monthlyLimit)} bln ini)`
+              : `${fmt(budget.amount)}/bln`
+            : "Belum diatur";
+          return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">${limitText}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(monthlyLimit - spent)} sisa</span></div></div>`;
         }).join("");
 
+        const today = new Date();
+        const isThisMonth = today.getMonth() === state.currentMonth && today.getFullYear() === state.currentYear;
+        const remainingDays = isThisMonth ? daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1 : 0;
+
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${remaining < 0 ? '<div class="text-xs muted mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*Budget harian dihitung ${remainingDays} hari tersisa bln ini</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
           <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 
@@ -2223,21 +2257,48 @@
 
       function setupBudgetModal() {
         const container = document.getElementById("budgetInputs");
-        container.innerHTML = state.categories
-          .filter((c) => c.type === "expense")
-          .map((c) => {
-            const b = state.budgets[c.id] || { amount: 0, type: "monthly" };
-            return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${b.type === "monthly" ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${b.type === "daily" ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${b.amount || 0}" min="0" step="1000" inputmode="numeric"></div></div>`;
-          })
-          .join("");
-        container.querySelectorAll(".budget-input-row").forEach((row) => {
+        const dInMonth = daysInMonth(state.currentYear, state.currentMonth);
+        container.innerHTML = state.categories.filter(c => c.type === "expense").map(c => {
+          const b = state.budgets[c.id] || { amount: 0, type: "monthly" };
+          const isDaily = b.type === "daily";
+          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${b.amount || 0}" min="0" step="1000" inputmode="numeric"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
+        }).join("");
+
+        container.querySelectorAll(".budget-input-row").forEach(row => {
           const typeBtns = row.querySelectorAll(".budget-type-btn");
-          typeBtns.forEach((btn) => {
+          const input = row.querySelector(".budget-input");
+          const hint = row.querySelector(".convert-hint");
+
+          const updateHint = () => {
+            const amt = parseFloat(input.value) || 0;
+            const activeBtn = row.querySelector(".budget-type-btn.active");
+            const activeType = activeBtn ? activeBtn.dataset.type : "monthly";
+            const today = new Date();
+            const isThisMonth = today.getMonth() === state.currentMonth && today.getFullYear() === state.currentYear;
+
+            if (activeType === "daily") {
+              if (isThisMonth) {
+                const remainingDays = daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1;
+                hint.innerHTML = `<span data-icon="trending_up" style="display:inline-flex;width:12px;height:12px"></span> Setara ${fmt(amt * Math.max(1, remainingDays))} sisa bulan ini (${remainingDays} hari)`;
+              } else {
+                hint.innerHTML = `<span data-icon="trending_up" style="display:inline-flex;width:12px;height:12px"></span> Setara ${fmt(amt * dInMonth)} / bulan`;
+              }
+            } else {
+              hint.innerHTML = `<span data-icon="trending_up" style="display:inline-flex;width:12px;height:12px"></span> Setara ${fmt(amt / dInMonth)} / hari`;
+            }
+            const iconEl = hint.querySelector("[data-icon]");
+            if (iconEl) iconEl.innerHTML = ICONS[iconEl.dataset.icon] || "";
+          };
+
+          typeBtns.forEach(btn => {
             btn.onclick = () => {
-              typeBtns.forEach((b) => b.classList.remove("active"));
+              typeBtns.forEach(b => b.classList.remove("active"));
               btn.classList.add("active");
+              updateHint();
             };
           });
+          input.addEventListener("input", updateHint);
+          updateHint();
         });
       }
 

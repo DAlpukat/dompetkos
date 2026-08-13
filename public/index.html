@@ -969,9 +969,9 @@
         pointer-events: none;
         transition: opacity 0.3s;
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
-        padding: 0;
+        padding: 16px;
       }
       .modal-bg.active {
         opacity: 1;
@@ -980,17 +980,19 @@
       .modal {
         background: var(--card);
         border: 1px solid var(--border2);
-        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        border-radius: var(--r-lg);
         width: 100%;
         max-width: 420px;
         max-height: 90vh;
         overflow-y: auto;
-        transform: translateY(100%);
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: scale(0.9);
+        opacity: 0;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
         padding: 20px;
       }
       .modal-bg.active .modal {
-        transform: translateY(0);
+        transform: scale(1);
+        opacity: 1;
       }
       .modal-head {
         display: flex;

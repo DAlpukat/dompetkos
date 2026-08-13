@@ -8,6 +8,7 @@
     />
     <meta name="theme-color" content="#0a0b0f" />
     <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./dompet.png" />
     <title>DompetKos — Budgeting Anak Rantau</title>
     <style>
       /* ===== RESET & BASE ===== */
@@ -1836,6 +1837,7 @@
         onSnapshot,
         query,
         where,
+        enableIndexedDbPersistence,
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       // ===== FIREBASE CONFIG =====
@@ -1851,6 +1853,27 @@
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+
+      enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code !== "failed-precondition" && err.code !== "unimplemented") {
+          console.error("Offline persistence error:", err);
+        }
+      });
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./sw.js");
+      }
+
+      const setSyncUI = () => {
+        const bar = document.getElementById("syncStatus");
+        const text = document.getElementById("syncText");
+        bar.classList.toggle("offline", !navigator.onLine);
+        bar.classList.toggle("online", navigator.onLine);
+        text.textContent = navigator.onLine ? "Online" : "Offline — tersimpan lokal";
+      };
+      window.addEventListener("online", setSyncUI);
+      window.addEventListener("offline", setSyncUI);
+      setSyncUI();
 
       const ICONS = {
         wallet:

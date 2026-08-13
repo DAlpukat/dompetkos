@@ -2036,31 +2036,22 @@
 
       function renderBudget() {
         const grid = document.getElementById("budgetGrid");
-        const totalExpense = state.transactions
-          .filter((t) => t.type === "expense")
-          .reduce((s, t) => s + t.amount, 0);
-        const totalBudget = Object.values(state.budgets).reduce(
-          (s, b) => s + (b.amount || 0),
-          0,
-        );
+        const income = state.transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+        const expense = state.transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+        const balance = income - expense;
+        const totalBudget = Object.values(state.budgets).reduce((s, b) => s + (b.amount || 0), 0);
+        const remaining = balance - totalBudget;
 
-        grid.innerHTML = state.categories
-          .filter((c) => c.type === "expense")
-          .map((cat) => {
-            const spent = state.transactions
-              .filter((t) => t.category === cat.id)
-              .reduce((s, t) => s + t.amount, 0);
-            const limit = state.budgets[cat.id]?.amount || 0;
-            const percent =
-              limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
-            return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">Limit: ${fmt(limit)}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(limit - spent)} sisa</span></div></div>`;
-          })
-          .join("");
+        grid.innerHTML = state.categories.filter(c => c.type === "expense").map(cat => {
+          const spent = state.transactions.filter(t => t.category === cat.id).reduce((s, t) => s + t.amount, 0);
+          const limit = state.budgets[cat.id]?.amount || 0;
+          const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+          return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">Limit: ${fmt(limit)}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(limit - spent)} sisa</span></div></div>`;
+        }).join("");
 
-        const sisa = totalBudget - totalExpense;
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${sisa < 0 ? "var(--danger)" : "var(--lime)"}">${fmt(sisa)}</div></div>
-          <div class="text-right"><div class="section-sub">Total Budget</div><div class="text-lg font-bold">${fmt(totalBudget)}</div></div>`;
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${remaining < 0 ? '<div class="text-xs muted mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
+          <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 
       function renderPieChart() {

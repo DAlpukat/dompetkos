@@ -1294,7 +1294,7 @@
               >
                 <span data-icon="arrow_down_left"></span>
               </div>
-              <div class="stat-label">Masuk</div>
+              <div class="stat-label">Tunai Masuk</div>
               <div
                 class="stat-value"
                 id="incomeDisplay"
@@ -1325,12 +1325,14 @@
             <div class="stat-box">
               <div
                 class="stat-icon"
-                style="background: rgba(196, 245, 66, 0.15); color: var(--lime)"
+                style="background: rgba(251, 191, 36, 0.15); color: var(--yellow)"
               >
-                <span data-icon="piggy_bank"></span>
+                <span data-icon="clock"></span>
               </div>
-              <div class="stat-label">Tersisa</div>
-              <div class="stat-value" id="remainingDisplay">Rp 0</div>
+              <div class="stat-label">Piutang</div>
+              <div class="stat-value" id="piutangDisplay" style="color: var(--yellow)">
+                Rp 0
+              </div>
             </div>
           </div>
           <div class="hero-footer">
@@ -1559,6 +1561,18 @@
           </button>
           <button class="type-btn" data-type="income">
             <span data-icon="arrow_down_left"></span> Pemasukan
+          </button>
+        </div>
+        <div
+          id="statusToggle"
+          class="type-toggle hidden"
+          style="margin-bottom: 16px"
+        >
+          <button type="button" class="type-btn active" data-status="received">
+            <span data-icon="check"></span> Sudah Diterima
+          </button>
+          <button type="button" class="type-btn" data-status="pending">
+            <span data-icon="clock"></span> Piutang (Belum Diterima)
           </button>
         </div>
         <form id="txForm">
@@ -1821,6 +1835,10 @@
       const ICONS = {
         wallet:
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
+        clock:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        check_circle:
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
         chart:
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="M18.7 8a17.62 17.62 0 0 0-15.4 9"/><path d="M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>',
         bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>',
@@ -1933,6 +1951,7 @@
         goals: [],
         selectedType: "expense",
         selectedCat: "",
+        selectedStatus: "received",
         editingTxId: null,
         editingCatId: null,
         activeMgrType: "expense",
@@ -2001,19 +2020,22 @@
       }
 
       function renderHero() {
-        const income = state.transactions
-          .filter((t) => t.type === "income")
+        const cashIncome = state.transactions
+          .filter((t) => t.type === "income" && t.status === "received")
+          .reduce((s, t) => s + t.amount, 0);
+        const pendingIncome = state.transactions
+          .filter((t) => t.type === "income" && t.status === "pending")
           .reduce((s, t) => s + t.amount, 0);
         const expense = state.transactions
           .filter((t) => t.type === "expense")
           .reduce((s, t) => s + t.amount, 0);
         document.getElementById("saldoDisplay").textContent = fmt(
-          income - expense,
+          cashIncome - expense,
         );
-        document.getElementById("incomeDisplay").textContent = fmt(income);
+        document.getElementById("incomeDisplay").textContent = fmt(cashIncome);
         document.getElementById("expenseDisplay").textContent = fmt(expense);
-        document.getElementById("remainingDisplay").textContent = fmt(
-          income - expense,
+        document.getElementById("piutangDisplay").textContent = fmt(
+          pendingIncome,
         );
       }
 
@@ -2185,7 +2207,13 @@
           icon: "ellipsis",
           color: "#888",
         };
-        return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div class="tx-info"><div class="tx-note">${t.note || cat.name}</div><div class="tx-cat">${cat.name}</div></div><div class="tx-amount" style="color: ${t.type === "income" ? "var(--success)" : "var(--fg)"}">${t.type === "income" ? "+" : "-"}${fmt(t.amount)}</div><div class="tx-actions"><button class="tx-edit" onclick="editTransaction('${t.id}')">${ICONS.edit}</button><button class="tx-del" onclick="deleteTx('${t.id}')">${ICONS.trash}</button></div></div>`;
+        let badge = "";
+        let markBtn = "";
+        if (t.type === "income" && t.status === "pending") {
+          badge = `<span class="badge badge-warn" style="margin-left: 8px; font-size: 9px;">Piutang</span>`;
+          markBtn = `<button class="btn-icon" style="width:28px;height:28px;color:var(--success);border-color:var(--success)" onclick="markAsReceived('${t.id}')" title="Tandai Sudah Diterima">${ICONS.check_circle}</button>`;
+        }
+        return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div class="tx-info"><div class="tx-note">${t.note || cat.name} ${badge}</div><div class="tx-cat">${cat.name}</div></div><div class="tx-amount" style="color: ${t.type === "income" ? "var(--success)" : "var(--fg)"}">${t.type === "income" ? "+" : "-"}${fmt(t.amount)}</div><div class="tx-actions"><button class="tx-edit" onclick="editTransaction('${t.id}')">${ICONS.edit}</button>${markBtn}<button class="tx-del" onclick="deleteTx('${t.id}')">${ICONS.trash}</button></div></div>`;
       }
 
       function renderGoals() {
@@ -2224,33 +2252,54 @@
       }
 
       function setupTxModal() {
-        document.querySelectorAll("#modalTx .type-btn").forEach((btn) => {
+        const statusToggle = document.getElementById("statusToggle");
+        document
+          .querySelectorAll("#modalTx .type-btn[data-type]")
+          .forEach((btn) => {
+            btn.onclick = () => {
+              state.selectedType = btn.dataset.type;
+              document
+                .querySelectorAll("#modalTx .type-btn[data-type]")
+                .forEach((b) => b.classList.remove("active"));
+              btn.classList.add("active");
+
+              if (state.selectedType === "income") {
+                statusToggle.classList.remove("hidden");
+              } else {
+                statusToggle.classList.add("hidden");
+                state.selectedStatus = "received";
+              }
+
+              const cats = state.categories.filter(
+                (c) => c.type === state.selectedType,
+              );
+              if (!cats.find((c) => c.id === state.selectedCat))
+                state.selectedCat = cats[0]?.id || "";
+              document.getElementById("txCats").innerHTML = cats
+                .map(
+                  (c) =>
+                    `<button type="button" class="cat-chip ${c.id === state.selectedCat ? "selected" : ""}" data-cat="${c.id}"><span style="display:flex;font-size:16px">${ICONS[c.icon] || ICONS.ellipsis}</span><span>${c.name}</span></button>`,
+                )
+                .join("");
+              document.querySelectorAll("#txCats .cat-chip").forEach((chip) => {
+                chip.onclick = () => {
+                  state.selectedCat = chip.dataset.cat;
+                  document
+                    .querySelectorAll("#txCats .cat-chip")
+                    .forEach((c) => c.classList.remove("selected"));
+                  chip.classList.add("selected");
+                };
+              });
+            };
+          });
+
+        document.querySelectorAll("#statusToggle .type-btn").forEach((btn) => {
           btn.onclick = () => {
-            state.selectedType = btn.dataset.type;
+            state.selectedStatus = btn.dataset.status;
             document
-              .querySelectorAll("#modalTx .type-btn")
+              .querySelectorAll("#statusToggle .type-btn")
               .forEach((b) => b.classList.remove("active"));
             btn.classList.add("active");
-            const cats = state.categories.filter(
-              (c) => c.type === state.selectedType,
-            );
-            if (!cats.find((c) => c.id === state.selectedCat))
-              state.selectedCat = cats[0]?.id || "";
-            document.getElementById("txCats").innerHTML = cats
-              .map(
-                (c) =>
-                  `<button type="button" class="cat-chip ${c.id === state.selectedCat ? "selected" : ""}" data-cat="${c.id}"><span style="display:flex;font-size:16px">${ICONS[c.icon] || ICONS.ellipsis}</span><span>${c.name}</span></button>`,
-              )
-              .join("");
-            document.querySelectorAll("#txCats .cat-chip").forEach((chip) => {
-              chip.onclick = () => {
-                state.selectedCat = chip.dataset.cat;
-                document
-                  .querySelectorAll("#txCats .cat-chip")
-                  .forEach((c) => c.classList.remove("selected"));
-                chip.classList.add("selected");
-              };
-            });
           };
         });
       }
@@ -2389,6 +2438,10 @@
           amount,
           note,
           date,
+          status:
+            state.selectedType === "income"
+              ? state.selectedStatus
+              : "received",
           createdAt: Date.now(),
         };
         if (state.editingTxId)
@@ -2454,18 +2507,28 @@
         await deleteDoc(doc(db, "transactions", id));
         showToast("Transaksi dihapus", "success");
       };
+      window.markAsReceived = async (id) => {
+        await setDoc(doc(db, "transactions", id), { status: "received" }, { merge: true });
+        showToast("Piutang berhasil ditandai sudah diterima!", "success");
+      };
       window.editTransaction = (id) => {
         const tx = state.transactions.find((t) => t.id === id);
         if (!tx) return;
         state.editingTxId = id;
         state.selectedType = tx.type;
         state.selectedCat = tx.category;
+        state.selectedStatus = tx.status || "received";
         document.getElementById("modalTxTitle").textContent = "Edit Transaksi";
         document.getElementById("txAmount").value = tx.amount;
         document.getElementById("txNote").value = tx.note || "";
         document.getElementById("txDate").value = tx.date;
         setupTxModal();
         document.querySelector(`#modalTx [data-type="${tx.type}"]`).click();
+        if (tx.type === "income") {
+          document
+            .querySelector(`#statusToggle [data-status="${state.selectedStatus}"]`)
+            .click();
+        }
         openModal("modalTx");
       };
       window.deleteCategory = async (id) => {

@@ -1,0 +1,3460 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#0a0b0f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="DompetKos" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <title>DompetKos — Budgeting Anak Rantau</title>
+    <style>
+      /* ===== RESET & BASE ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0a0b0f;
+        --bg2: #0f1117;
+        --card: #14161e;
+        --card2: #1a1d27;
+        --border: rgba(255, 255, 255, 0.06);
+        --border2: rgba(255, 255, 255, 0.14);
+        --fg: #f5f5f0;
+        --muted: #7c7f8c;
+        --muted2: #4a4d57;
+        --lime: #c4f542;
+        --coral: #ff7849;
+        --cyan: #22d3ee;
+        --pink: #f472b6;
+        --purple: #c084fc;
+        --yellow: #fbbf24;
+        --danger: #f87171;
+        --success: #4ade80;
+        --r: 16px;
+        --r-sm: 10px;
+        --r-lg: 24px;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      }
+      html {
+        font-size: 15px;
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.5;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: var(--r-sm);
+        padding: 12px 14px;
+        color: var(--fg);
+        transition: 0.2s;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--lime);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      svg {
+        width: 1em;
+        height: 1em;
+        flex-shrink: 0;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      /* ===== UTILITIES ===== */
+      .container {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 16px;
+      }
+      .flex {
+        display: flex;
+      }
+      .grid {
+        display: grid;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+      .gap-1 {
+        gap: 4px;
+      }
+      .gap-2 {
+        gap: 8px;
+      }
+      .gap-3 {
+        gap: 12px;
+      }
+      .gap-4 {
+        gap: 16px;
+      }
+      .gap-5 {
+        gap: 20px;
+      }
+      .flex-1 {
+        flex: 1;
+      }
+      .flex-wrap {
+        flex-wrap: wrap;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .text-xs {
+        font-size: 11px;
+      }
+      .text-sm {
+        font-size: 13px;
+      }
+      .text-md {
+        font-size: 15px;
+      }
+      .text-lg {
+        font-size: 18px;
+      }
+      .text-xl {
+        font-size: 22px;
+      }
+      .text-2xl {
+        font-size: 28px;
+      }
+      .text-3xl {
+        font-size: 36px;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .font-semibold {
+        font-weight: 600;
+      }
+      .font-medium {
+        font-weight: 500;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .muted2 {
+        color: var(--muted2);
+      }
+      .mt-1 {
+        margin-top: 4px;
+      }
+      .mt-2 {
+        margin-top: 8px;
+      }
+      .mt-3 {
+        margin-top: 12px;
+      }
+      .mt-4 {
+        margin-top: 16px;
+      }
+      .mt-5 {
+        margin-top: 20px;
+      }
+      .mt-6 {
+        margin-top: 24px;
+      }
+      .mb-1 {
+        margin-bottom: 4px;
+      }
+      .mb-2 {
+        margin-bottom: 8px;
+      }
+      .mb-3 {
+        margin-bottom: 12px;
+      }
+      .mb-4 {
+        margin-bottom: 16px;
+      }
+      .mb-5 {
+        margin-bottom: 20px;
+      }
+      .mb-6 {
+        margin-bottom: 24px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .uppercase {
+        text-transform: uppercase;
+      }
+      .tracking {
+        letter-spacing: 0.05em;
+      }
+      .tabular {
+        font-variant-numeric: tabular-nums;
+      }
+      .rounded {
+        border-radius: var(--r);
+      }
+      .rounded-sm {
+        border-radius: var(--r-sm);
+      }
+      .rounded-lg {
+        border-radius: var(--r-lg);
+      }
+      .rounded-full {
+        border-radius: 999px;
+      }
+
+      /* ===== BACKGROUND ===== */
+      .bg-fx {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(100px);
+        opacity: 0.15;
+        animation: float 20s ease-in-out infinite;
+      }
+      .blob:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        background: var(--lime);
+        top: -80px;
+        left: -80px;
+      }
+      .blob:nth-child(2) {
+        width: 350px;
+        height: 350px;
+        background: var(--coral);
+        top: 25%;
+        right: -100px;
+        animation-delay: -7s;
+      }
+      .blob:nth-child(3) {
+        width: 380px;
+        height: 380px;
+        background: var(--cyan);
+        bottom: -100px;
+        left: 35%;
+        animation-delay: -14s;
+        opacity: 0.1;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        33% {
+          transform: translate(40px, -25px) scale(1.08);
+        }
+        66% {
+          transform: translate(-25px, 35px) scale(0.95);
+        }
+      }
+
+      /* ===== HEADER ===== */
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(10, 11, 15, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+      }
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        max-width: 760px;
+        margin: 0 auto;
+        gap: 12px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .logo-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--lime), var(--coral));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+      }
+      .logo-text {
+        font-weight: 800;
+        font-size: 16px;
+        line-height: 1;
+      }
+      .logo-sub {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      /* Sync status bar */
+      .sync-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        transition: 0.3s;
+      }
+      .sync-bar.online {
+        color: var(--success);
+        border-color: rgba(74, 222, 128, 0.2);
+      }
+      .sync-bar.offline {
+        color: var(--yellow);
+        border-color: rgba(251, 191, 36, 0.2);
+      }
+      .sync-bar.syncing {
+        color: var(--cyan);
+        border-color: rgba(34, 211, 238, 0.2);
+      }
+      .sync-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .sync-bar.online .sync-dot {
+        animation: pulse 2s infinite;
+      }
+      .sync-bar.syncing .sync-dot {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* ===== BUTTONS ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 16px;
+        border-radius: var(--r-sm);
+        font-size: 13px;
+        font-weight: 600;
+        transition: 0.2s;
+        white-space: nowrap;
+        border: 1px solid transparent;
+      }
+      .btn-primary {
+        background: var(--lime);
+        color: #0a0b0f;
+      }
+      .btn-primary:hover {
+        background: #d4ff5c;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px -8px rgba(196, 245, 66, 0.4);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+      .btn-ghost {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: var(--border);
+        color: var(--fg);
+      }
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--border2);
+      }
+      .btn-icon {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+      .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      /* ===== CARD ===== */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        transition: 0.3s;
+      }
+      .card-hover:hover {
+        border-color: var(--border2);
+        background: var(--card2);
+      }
+      .card-pad {
+        padding: 16px;
+      }
+      .card-pad-lg {
+        padding: 20px;
+      }
+
+      /* ===== HERO ===== */
+      .hero {
+        background:
+          radial-gradient(
+            circle at 0% 0%,
+            rgba(196, 245, 66, 0.12),
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 100% 100%,
+            rgba(255, 120, 73, 0.1),
+            transparent 50%
+          ),
+          linear-gradient(135deg, var(--card), var(--card2));
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg);
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-label {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .hero-balance {
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .hero-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .stat-box {
+        padding: 12px;
+        border-radius: var(--r);
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+      }
+      .stat-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      .stat-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat-value {
+        font-size: 14px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        margin-top: 2px;
+      }
+      .hero-footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-top: 16px;
+        margin-top: 16px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+      }
+      .hero-footer span {
+        color: var(--muted);
+      }
+
+      /* ===== STATUS CARD ===== */
+      .status-card {
+        padding: 20px;
+      }
+      .status-title {
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .status-desc {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .progress-bar {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+        position: relative;
+        margin-top: 12px;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+      .progress-fill::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.25),
+          transparent
+        );
+        animation: shimmer 2s infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      .ampas {
+        animation: ampas 2s infinite;
+      }
+      @keyframes ampas {
+        0% {
+          box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.3);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(248, 113, 113, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+        }
+      }
+
+      /* ===== SECTION ===== */
+      .section {
+        padding-top: 28px;
+      }
+      .section-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .section-sub {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+
+      /* ===== BUDGET GRID ===== */
+      .budget-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 560px) {
+        .budget-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (min-width: 720px) {
+        .budget-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .budget-card {
+        padding: 16px;
+      }
+      .budget-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .budget-cat {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .cat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .budget-name {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .budget-limit {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .badge-warn {
+        background: rgba(251, 191, 36, 0.15);
+        color: var(--yellow);
+      }
+      .badge-over {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+      }
+      .budget-foot {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        margin-top: 6px;
+      }
+
+      /* ===== CHARTS (CSS-based) ===== */
+      .chart-donut {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        margin: 0 auto;
+      }
+      .chart-donut .ring {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        transition: background 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .chart-donut .hole {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 62%;
+        height: 62%;
+        background: var(--card);
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .donut-total {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .donut-value {
+        font-size: 18px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .chart-legend {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12px;
+      }
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .legend-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .legend-label span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .chart-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 200px;
+        padding: 0 4px;
+      }
+      .bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        gap: 4px;
+        min-width: 0;
+      }
+      .bar {
+        width: 100%;
+        max-width: 28px;
+        border-radius: 4px 4px 0 0;
+        min-height: 2px;
+        transition:
+          height 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.2s;
+        cursor: pointer;
+        position: relative;
+      }
+      .bar:hover {
+        opacity: 0.8;
+      }
+      .bar-label {
+        font-size: 9px;
+        color: var(--muted2);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ===== TRANSACTIONS ===== */
+      .tx-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 560px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tx-date {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px 4px;
+      }
+      .tx-date-label {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+      }
+      .tx-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: var(--r-sm);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid transparent;
+        transition: 0.2s;
+      }
+      .tx-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: var(--border);
+      }
+      .tx-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .tx-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .tx-note {
+        font-size: 13px;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tx-cat {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .tx-amount {
+        font-size: 13px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .tx-sync {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-left: 4px;
+      }
+      .tx-sync.pending {
+        background: var(--yellow);
+      }
+      .tx-sync.synced {
+        background: var(--success);
+        opacity: 0.5;
+      }
+      .tx-del {
+        opacity: 0;
+        font-size: 14px;
+        color: var(--danger);
+        padding: 4px;
+        transition: 0.2s;
+        background: none;
+        border: none;
+      }
+      .tx-item:hover .tx-del {
+        opacity: 1;
+      }
+      .tx-del:hover {
+        background: rgba(248, 113, 113, 0.1);
+        border-radius: 6px;
+      }
+
+      /* ===== GOALS ===== */
+      .goal-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 560px) {
+        .goal-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (min-width: 720px) {
+        .goal-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .goal-card {
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+      }
+      .goal-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .goal-ring {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+      }
+      .goal-ring svg {
+        transform: rotate(-90deg);
+        width: 100%;
+        height: 100%;
+      }
+      .goal-ring circle {
+        transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .goal-ring-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .goal-name {
+        font-size: 14px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 140px;
+      }
+      .goal-amount {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .goal-remaining {
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .goal-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .goal-actions .btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 11px;
+      }
+
+      /* ===== TIPS ===== */
+      .tip-card {
+        background: linear-gradient(
+          135deg,
+          rgba(196, 245, 66, 0.05),
+          rgba(255, 120, 73, 0.04)
+        );
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .tip-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(196, 245, 66, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        color: var(--lime);
+      }
+      .tip-text {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .tips-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 560px) {
+        .tips-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (min-width: 720px) {
+        .tips-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .tip-card-static {
+        padding: 16px;
+      }
+      .tip-card-static .tip-icon {
+        margin-bottom: 12px;
+      }
+      .tip-card-static h4 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .tip-card-static p {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      /* ===== TABS / FILTERS ===== */
+      .tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid transparent;
+        transition: 0.2s;
+      }
+      .tab.active {
+        background: var(--lime);
+        color: #0a0b0f;
+      }
+      .tab:not(.active):hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--fg);
+      }
+      .select-sm {
+        padding: 6px 28px 6px 10px;
+        font-size: 12px;
+        width: auto;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%237c7f8c' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        cursor: pointer;
+      }
+
+      /* ===== MODAL ===== */
+      .modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0;
+      }
+      @media (min-width: 560px) {
+        .modal-bg {
+          align-items: center;
+          padding: 16px;
+        }
+      }
+      .modal-bg.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .modal {
+        background: var(--card);
+        border: 1px solid var(--border2);
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        width: 100%;
+        max-width: 420px;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 20px;
+      }
+      @media (min-width: 560px) {
+        .modal {
+          border-radius: var(--r-lg);
+          transform: scale(0.95) translateY(20px);
+          opacity: 0;
+        }
+        .modal-bg.active .modal {
+          transform: scale(1) translateY(0);
+          opacity: 1;
+        }
+      }
+      .modal-bg.active .modal {
+        transform: translateY(0);
+      }
+      .modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .modal-title {
+        font-size: 20px;
+        font-weight: 800;
+      }
+      .modal-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .modal-close {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      /* Type toggle */
+      .type-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: var(--r-sm);
+        margin-bottom: 16px;
+      }
+      .type-btn {
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .type-btn.active {
+        background: var(--lime);
+        color: #0a0b0f;
+      }
+
+      /* Category chips */
+      .cat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .cat-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: var(--r-sm);
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        font-size: 12px;
+        font-weight: 500;
+        transition: 0.2s;
+        text-align: left;
+      }
+      .cat-chip:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .cat-chip.selected {
+        background: rgba(196, 245, 66, 0.1);
+        border-color: var(--lime);
+        color: var(--lime);
+      }
+
+      /* Form */
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: block;
+      }
+      .input-wrap {
+        position: relative;
+      }
+      .input-prefix {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 13px;
+        pointer-events: none;
+      }
+      .input-padded {
+        padding-left: 36px;
+      }
+
+      /* ===== TOAST ===== */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 16px;
+        right: 16px;
+        z-index: 200;
+        padding: 14px 16px;
+        background: var(--card2);
+        border: 1px solid var(--border2);
+        border-radius: var(--r);
+        box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transform: translateY(120%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 360px;
+        margin: 0 auto;
+      }
+      @media (min-width: 560px) {
+        .toast {
+          left: auto;
+          right: 20px;
+        }
+      }
+      .toast.show {
+        transform: translateY(0);
+      }
+      .toast.success {
+        border-left: 3px solid var(--success);
+      }
+      .toast.warning {
+        border-left: 3px solid var(--yellow);
+      }
+      .toast.danger {
+        border-left: 3px solid var(--danger);
+      }
+      .toast-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .toast-text {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      /* ===== EMPTY STATE ===== */
+      .empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--muted);
+      }
+      .empty-icon {
+        font-size: 32px;
+        color: var(--muted2);
+        margin-bottom: 8px;
+      }
+
+      /* ===== FAB ===== */
+      .fab {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--lime);
+        color: #0a0b0f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        z-index: 50;
+        box-shadow: 0 8px 32px -8px rgba(196, 245, 66, 0.5);
+        transition: 0.3s;
+      }
+      .fab:hover {
+        transform: scale(1.08);
+      }
+      @media (min-width: 560px) {
+        .fab {
+          display: none;
+        }
+      }
+
+      /* ===== SCROLLBAR ===== */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* ===== ANIMATIONS ===== */
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .slide-up {
+        animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+      }
+
+      /* ===== SYNC OVERLAY ===== */
+      .sync-overlay {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--card2);
+        border: 1px solid var(--border2);
+        border-radius: 999px;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        z-index: 90;
+        transition: transform 0.3s;
+      }
+      .sync-overlay.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      .sync-overlay .spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(34, 211, 238, 0.2);
+        border-top-color: var(--cyan);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      /* ===== INSTALL BANNER ===== */
+      .install-banner {
+        position: fixed;
+        bottom: 20px;
+        left: 16px;
+        right: 16px;
+        max-width: 420px;
+        margin: 0 auto;
+        background: var(--card2);
+        border: 1px solid var(--border2);
+        border-radius: var(--r);
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 80;
+        transform: translateY(120%);
+        transition: transform 0.4s;
+      }
+      .install-banner.show {
+        transform: translateY(0);
+      }
+      .install-banner .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--lime), var(--coral));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Background FX -->
+    <div class="bg-fx">
+      <div class="blob"></div>
+      <div class="blob"></div>
+      <div class="blob"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-icon">💰</div>
+          <div>
+            <div class="logo-text">DompetKos</div>
+            <div class="logo-sub">Anak Rantau</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div id="syncStatus" class="sync-bar online">
+            <span class="sync-dot"></span>
+            <span id="syncText">Online</span>
+          </div>
+          <button
+            id="btnInstall"
+            class="btn-icon hidden"
+            title="Pasang aplikasi"
+          >
+            📱
+          </button>
+          <button id="btnSettings" class="btn-icon" title="Pengaturan">
+            ⚙️
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main
+      class="container"
+      style="position: relative; z-index: 10; padding-bottom: 80px"
+    >
+      <!-- HERO -->
+      <section style="padding-top: 20px">
+        <div class="hero slide-up">
+          <div class="hero-label">
+            <span
+              class="sync-dot"
+              style="background: var(--lime); animation: pulse 2s infinite"
+            ></span>
+            Saldo bulan ini
+          </div>
+          <div class="hero-balance" id="saldoDisplay">Rp 0</div>
+
+          <div class="hero-stats">
+            <div class="stat-box">
+              <div
+                class="stat-icon"
+                style="background: rgba(74, 222, 128, 0.15)"
+              >
+                ↓
+              </div>
+              <div class="stat-label">Masuk</div>
+              <div
+                class="stat-value"
+                id="incomeDisplay"
+                style="color: var(--success)"
+              >
+                Rp 0
+              </div>
+            </div>
+            <div class="stat-box">
+              <div
+                class="stat-icon"
+                style="background: rgba(248, 113, 113, 0.15)"
+              >
+                ↑
+              </div>
+              <div class="stat-label">Keluar</div>
+              <div
+                class="stat-value"
+                id="expenseDisplay"
+                style="color: var(--danger)"
+              >
+                Rp 0
+              </div>
+            </div>
+            <div class="stat-box">
+              <div
+                class="stat-icon"
+                style="background: rgba(196, 245, 66, 0.15)"
+              >
+                🐷
+              </div>
+              <div class="stat-label">Tersisa</div>
+              <div class="stat-value" id="remainingDisplay">Rp 0</div>
+            </div>
+          </div>
+
+          <div class="hero-footer">
+            <span
+              >📅 Rata-rata:
+              <strong style="color: var(--fg)" id="dailyAvg">Rp 0</strong></span
+            >
+            <span
+              >📈 Prediksi:
+              <strong style="color: var(--fg)" id="prediction"
+                >Rp 0</strong
+              ></span
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- STATUS + TIP -->
+      <section style="padding-top: 12px">
+        <div class="grid" style="grid-template-columns: 1fr; gap: 12px">
+          <div id="statusCard" class="card status-card slide-up">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs muted uppercase tracking font-semibold"
+                >Status Keuangan</span
+              >
+              <span style="font-size: 14px">📊</span>
+            </div>
+            <div class="status-title" id="statusTitle">Aman, Sob!</div>
+            <div class="status-desc" id="statusDesc">
+              Pengeluaran masih dalam batas wajar
+            </div>
+            <div class="progress-bar">
+              <div
+                id="statusProgress"
+                class="progress-fill"
+                style="width: 0%; background: var(--lime)"
+              ></div>
+            </div>
+            <div class="flex justify-between mt-1 text-xs">
+              <span class="muted">Terpakai</span>
+              <span id="statusPercent" class="font-semibold">0%</span>
+            </div>
+          </div>
+
+          <div class="tip-card slide-up">
+            <div class="tip-icon">💡</div>
+            <div>
+              <div class="text-xs muted uppercase tracking font-semibold mb-1">
+                Tips Hari Ini
+              </div>
+              <div class="tip-text" id="tipText">
+                Masak sendiri bisa hemat 60% budget makan!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUDGET -->
+      <section class="section">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <div class="section-sub">Anggaran Bulanan</div>
+            <div class="section-title">Budget per Kategori</div>
+          </div>
+          <button id="btnEditBudget" class="btn btn-ghost btn-sm">
+            ⚙️ Atur
+          </button>
+        </div>
+        <div id="budgetGrid" class="budget-grid"></div>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="section">
+        <div class="grid" style="grid-template-columns: 1fr; gap: 12px">
+          <div class="card card-pad-lg">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <div class="section-sub">Distribusi</div>
+                <div style="font-size: 16px; font-weight: 700">
+                  Sebaran Pengeluaran
+                </div>
+              </div>
+              <span style="font-size: 14px">🥧</span>
+            </div>
+            <div id="pieEmpty" class="empty hidden">
+              <div class="empty-icon">📊</div>
+              <div class="text-sm">Belum ada pengeluaran</div>
+            </div>
+            <div id="pieChartWrap">
+              <div class="chart-donut">
+                <div
+                  id="pieRing"
+                  class="ring"
+                  style="
+                    background: conic-gradient(
+                      rgba(255, 255, 255, 0.04) 0% 100%
+                    );
+                  "
+                ></div>
+                <div class="hole">
+                  <div class="donut-total" id="pieTotalLabel">Total</div>
+                  <div class="donut-value" id="pieTotalValue">Rp 0</div>
+                </div>
+              </div>
+              <div class="chart-legend" id="pieLegend"></div>
+            </div>
+          </div>
+
+          <div class="card card-pad-lg">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+              <div>
+                <div class="section-sub">Tren Harian</div>
+                <div style="font-size: 16px; font-weight: 700">
+                  Pengeluaran Terakhir
+                </div>
+              </div>
+              <div class="tabs" id="rangeTabs">
+                <button class="tab active" data-range="7">7 Hari</button>
+                <button class="tab" data-range="14">14 Hari</button>
+                <button class="tab" data-range="30">30 Hari</button>
+              </div>
+            </div>
+            <div class="chart-bars" id="barChart"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSAKSI -->
+      <section class="section">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <div>
+            <div class="section-sub">Riwayat</div>
+            <div class="section-title">Transaksi Terbaru</div>
+          </div>
+          <div class="flex gap-2">
+            <select id="filterCat" class="select-sm">
+              <option value="all">Semua kategori</option>
+            </select>
+            <select id="filterType" class="select-sm">
+              <option value="all">Semua</option>
+              <option value="income">Masuk</option>
+              <option value="expense">Keluar</option>
+            </select>
+          </div>
+        </div>
+        <div class="card card-pad">
+          <div id="txList" class="tx-list"></div>
+        </div>
+      </section>
+
+      <!-- GOALS -->
+      <section class="section">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <div class="section-sub">Target Tabungan</div>
+            <div class="section-title">Impian Anak Rantau</div>
+          </div>
+          <button id="btnAddGoal" class="btn btn-ghost btn-sm">+ Target</button>
+        </div>
+        <div id="goalsGrid" class="goal-grid"></div>
+      </section>
+
+      <!-- TIPS -->
+      <section class="section">
+        <div class="mb-4">
+          <div class="section-sub">Berkah Rantau</div>
+          <div class="section-title">Taktik Hemat Anak Kos</div>
+        </div>
+        <div class="tips-grid">
+          <div class="card card-pad tip-card-static">
+            <div
+              class="tip-icon"
+              style="background: rgba(255, 120, 73, 0.15); color: var(--coral)"
+            >
+              🍜
+            </div>
+            <h4>Masak Patungan</h4>
+            <p>
+              Ajak teman kos masak bareng. Belanja di pasar tradisional jauh
+              lebih hemat.
+            </p>
+          </div>
+          <div class="card card-pad tip-card-static">
+            <div
+              class="tip-icon"
+              style="background: rgba(196, 245, 66, 0.15); color: var(--lime)"
+            >
+              📅
+            </div>
+            <h4>Aturan 50/30/20</h4>
+            <p>
+              50% kebutuhan, 30% keinginan, 20% tabungan. Pisahkan rekening
+              tabungan.
+            </p>
+          </div>
+          <div class="card card-pad tip-card-static">
+            <div
+              class="tip-icon"
+              style="background: rgba(34, 211, 238, 0.15); color: var(--cyan)"
+            >
+              🚲
+            </div>
+            <h4>Hemat Transport</h4>
+            <p>
+              Jalan kaki atau naik angkot untuk jarak dekat. Naik ojek cuma
+              kalau darurat.
+            </p>
+          </div>
+          <div class="card card-pad tip-card-static">
+            <div
+              class="tip-icon"
+              style="
+                background: rgba(192, 132, 252, 0.15);
+                color: var(--purple);
+              "
+            >
+              🛒
+            </div>
+            <h4>List Belanja Wajib</h4>
+            <p>
+              Tulis yang mau dibeli sebelum ke minimarket. Jangan belanja saat
+              lapar.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer style="padding: 32px 0 16px; text-align: center">
+        <div style="font-size: 12px; color: var(--muted)">
+          DompetKos — Dibuat untuk anak rantau 💪
+        </div>
+        <div style="font-size: 11px; color: var(--muted2); margin-top: 4px">
+          Data tersimpan lokal di HP kamu. Sync ke server saat online.
+        </div>
+      </footer>
+    </main>
+
+    <!-- FAB -->
+    <button class="fab" id="fabAdd">+</button>
+
+    <!-- Sync overlay -->
+    <div id="syncOverlay" class="sync-overlay">
+      <div class="spinner"></div>
+      <span>Sync ke server...</span>
+    </div>
+
+    <!-- Install banner -->
+    <div id="installBanner" class="install-banner">
+      <div class="icon">📱</div>
+      <div class="flex-1">
+        <div style="font-size: 13px; font-weight: 700">Pasang DompetKos</div>
+        <div style="font-size: 11px; color: var(--muted)">
+          Akses lebih cepat, bisa offline
+        </div>
+      </div>
+      <button id="installYes" class="btn btn-primary btn-sm">Pasang</button>
+      <button
+        id="installNo"
+        class="btn-icon"
+        style="width: 28px; height: 28px; font-size: 12px"
+      >
+        ×
+      </button>
+    </div>
+
+    <!-- MODAL: Transaction -->
+    <div class="modal-bg" id="modalTx">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Catat Transaksi</div>
+            <div class="modal-sub">Masukin pemasukan atau pengeluaran</div>
+          </div>
+          <button class="modal-close" data-close>✕</button>
+        </div>
+        <div class="type-toggle">
+          <button class="type-btn active" data-type="expense">
+            ↑ Pengeluaran
+          </button>
+          <button class="type-btn" data-type="income">↓ Pemasukan</button>
+        </div>
+        <form id="txForm">
+          <div class="form-group">
+            <label class="form-label">Nominal</label>
+            <div class="input-wrap">
+              <span class="input-prefix">Rp</span>
+              <input
+                type="number"
+                id="txAmount"
+                class="input-padded"
+                placeholder="0"
+                required
+                min="1"
+                inputmode="numeric"
+                style="font-size: 18px; font-weight: 700"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <div id="txCats" class="cat-grid"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catatan (opsional)</label>
+            <input type="text" id="txNote" placeholder="cth: Makan di warteg" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="date" id="txDate" required />
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button type="button" class="btn btn-ghost flex-1" data-close>
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Budget -->
+    <div class="modal-bg" id="modalBudget">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Atur Budget</div>
+            <div class="modal-sub">Tentukan batas per kategori</div>
+          </div>
+          <button class="modal-close" data-close>✕</button>
+        </div>
+        <form id="budgetForm">
+          <div id="budgetInputs"></div>
+          <div class="flex gap-2 mt-4">
+            <button type="button" class="btn btn-ghost flex-1" data-close>
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Goal -->
+    <div class="modal-bg" id="modalGoal">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Target Baru</div>
+            <div class="modal-sub">Wujudkan impianmu</div>
+          </div>
+          <button class="modal-close" data-close>✕</button>
+        </div>
+        <form id="goalForm">
+          <div class="form-group">
+            <label class="form-label">Nama Target</label>
+            <input
+              type="text"
+              id="goalName"
+              placeholder="cth: Pulang kampung Lebaran"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target Nominal</label>
+            <div class="input-wrap">
+              <span class="input-prefix">Rp</span>
+              <input
+                type="number"
+                id="goalTarget"
+                class="input-padded"
+                placeholder="2000000"
+                required
+                min="1000"
+                inputmode="numeric"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sudah Terkumpul</label>
+            <div class="input-wrap">
+              <span class="input-prefix">Rp</span>
+              <input
+                type="number"
+                id="goalCurrent"
+                class="input-padded"
+                placeholder="0"
+                value="0"
+                min="0"
+                inputmode="numeric"
+              />
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button type="button" class="btn btn-ghost flex-1" data-close>
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary flex-1">Tambah</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Settings -->
+    <div class="modal-bg" id="modalSettings">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Pengaturan</div>
+            <div class="modal-sub">Sync & data management</div>
+          </div>
+          <button class="modal-close" data-close>✕</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status Sync</label>
+          <div class="card card-pad" style="padding: 12px">
+            <div class="flex justify-between items-center">
+              <div>
+                <div
+                  style="font-size: 13px; font-weight: 600"
+                  id="settingsSyncStatus"
+                >
+                  🟢 Online
+                </div>
+                <div
+                  style="font-size: 11px; color: var(--muted)"
+                  id="settingsSyncDetail"
+                >
+                  Terakhir sync: belum pernah
+                </div>
+              </div>
+              <button id="btnSyncNow" class="btn btn-ghost btn-sm">
+                🔄 Sync
+              </button>
+            </div>
+            <div
+              style="margin-top: 8px; font-size: 11px; color: var(--muted)"
+              id="settingsPending"
+            >
+              0 transaksi pending
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Server API URL (opsional)</label>
+          <input
+            type="url"
+            id="apiUrl"
+            placeholder="https://api.server-kamu.com"
+          />
+          <div style="font-size: 11px; color: var(--muted); margin-top: 4px">
+            Kosongkan untuk mode lokal (data cuma di HP)
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">API Key (opsional)</label>
+          <input type="password" id="apiKey" placeholder="Bearer token" />
+        </div>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            id="btnReset"
+            class="btn btn-ghost flex-1"
+            style="color: var(--danger)"
+          >
+            🗑 Reset Data
+          </button>
+          <button id="btnSaveSettings" class="btn btn-primary flex-1">
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+      <span class="toast-icon">✓</span>
+      <span class="toast-text">Tersimpan!</span>
+    </div>
+
+    <script>
+      /* ============================================================
+   DOMPETKOS PWA — Offline-First Budgeting
+   ============================================================ */
+
+      // ===== CONFIG =====
+      const CONFIG = {
+        API_URL: localStorage.getItem("dk_api_url") || "",
+        API_KEY: localStorage.getItem("dk_api_key") || "",
+        DB_NAME: "dompetkos_db",
+        DB_VERSION: 1,
+      };
+
+      // ===== DATA =====
+      const CATS_EXPENSE = [
+        { id: "makan", name: "Makan & Minum", emoji: "🍜", color: "#fb923c" },
+        { id: "kos", name: "Kos", emoji: "🏠", color: "#c4f542" },
+        { id: "transport", name: "Transport", emoji: "🚌", color: "#22d3ee" },
+        {
+          id: "pulsa",
+          name: "Pulsa & Internet",
+          emoji: "📱",
+          color: "#c084fc",
+        },
+        { id: "belanja", name: "Belanja", emoji: "🛍️", color: "#f472b6" },
+        { id: "hiburan", name: "Hiburan", emoji: "🎮", color: "#fbbf24" },
+        { id: "kesehatan", name: "Kesehatan", emoji: "💊", color: "#f87171" },
+        { id: "lainnya", name: "Lainnya", emoji: "📎", color: "#94a3b8" },
+      ];
+      const CATS_INCOME = [
+        { id: "uang_jajan", name: "Uang Jajan", emoji: "💵", color: "#c4f542" },
+        { id: "gaji", name: "Gaji/UP", emoji: "💼", color: "#4ade80" },
+        { id: "freelance", name: "Freelance", emoji: "💻", color: "#22d3ee" },
+        { id: "hadiah", name: "Hadiah", emoji: "🎁", color: "#f472b6" },
+        { id: "lainnya", name: "Lainnya", emoji: "📎", color: "#94a3b8" },
+      ];
+      const TIPS = [
+        "Masak sendiri bisa hemat sampai 60% budget makan bulanan!",
+        "Sisihkan 10% pertama dari uang masuk ke tabungan, bukan sisanya.",
+        "Cek promo ojek online sebelum pesan, kadang ada diskon 50%.",
+        "Belanja bulanan sekali sebulan biar nggak bocor halus tiap hari.",
+        "Pisahkan rekening tabungan dari rekening harian. Lebih aman.",
+        "Hindari paylater untuk barang yang bukan kebutuhan darurat.",
+        "Patungan Netflix/Spotify sama teman kos jauh lebih hemat.",
+        "Catat setiap pengeluaran kecil, itu yang bikin budget bocor.",
+        "Buat dana darurat minimal 3x biaya kos bulanan.",
+        "Bandingin harga sebelum beli, beda toko beda harga lho.",
+      ];
+      const DEFAULT_BUDGETS = {
+        makan: 800000,
+        kos: 600000,
+        transport: 200000,
+        pulsa: 150000,
+        belanja: 300000,
+        hiburan: 200000,
+        kesehatan: 150000,
+        lainnya: 200000,
+      };
+
+      // ===== STATE =====
+      let state = {
+        transactions: [],
+        budgets: { ...DEFAULT_BUDGETS },
+        goals: [],
+        selectedType: "expense",
+        selectedCat: "makan",
+        currentMonth: new Date().getMonth(),
+        currentYear: new Date().getFullYear(),
+        chartRange: 7,
+        isOnline: navigator.onLine,
+        isSyncing: false,
+        lastSync: null,
+      };
+
+      // ===== INDEXEDDB =====
+      const DB = {
+        db: null,
+        async init() {
+          return new Promise((resolve, reject) => {
+            const req = indexedDB.open(CONFIG.DB_NAME, CONFIG.DB_VERSION);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains("transactions"))
+                db.createObjectStore("transactions", { keyPath: "id" });
+              if (!db.objectStoreNames.contains("budgets"))
+                db.createObjectStore("budgets", { keyPath: "category" });
+              if (!db.objectStoreNames.contains("goals"))
+                db.createObjectStore("goals", { keyPath: "id" });
+              if (!db.objectStoreNames.contains("meta"))
+                db.createObjectStore("meta", { keyPath: "key" });
+            };
+            req.onsuccess = (e) => {
+              this.db = e.target.result;
+              resolve(this.db);
+            };
+            req.onerror = (e) => reject(e);
+          });
+        },
+        async put(store, data) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(store, "readwrite");
+            tx.objectStore(store).put(data);
+            tx.oncomplete = () => resolve(data);
+            tx.onerror = () => reject(tx.error);
+          });
+        },
+        async getAll(store) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(store, "readonly");
+            const req = tx.objectStore(store).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+          });
+        },
+        async delete(store, key) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(store, "readwrite");
+            tx.objectStore(store).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        },
+        async clear(store) {
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(store, "readwrite");
+            tx.objectStore(store).clear();
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        },
+        async getMeta(key) {
+          return new Promise((resolve) => {
+            const tx = this.db.transaction("meta", "readonly");
+            const req = tx.objectStore("meta").get(key);
+            req.onsuccess = () => resolve(req.result?.value);
+            req.onerror = () => resolve(null);
+          });
+        },
+        async setMeta(key, value) {
+          return this.put("meta", { key, value });
+        },
+      };
+
+      // ===== SYNC MANAGER =====
+      const SyncMgr = {
+        async init() {
+          window.addEventListener("online", () => {
+            state.isOnline = true;
+            this.updateUI();
+            showToast("Koneksi internet kembali! 📶", "success");
+            this.sync();
+          });
+          window.addEventListener("offline", () => {
+            state.isOnline = false;
+            this.updateUI();
+            showToast("Mode offline aktif. Data disimpan lokal. 📴", "warning");
+          });
+
+          state.lastSync = await DB.getMeta("lastSync");
+
+          if (state.isOnline) {
+            setTimeout(() => this.sync(), 1500);
+          }
+
+          setInterval(() => {
+            if (state.isOnline && !state.isSyncing) this.sync();
+          }, 60000);
+
+          navigator.serviceWorker?.addEventListener("message", (e) => {
+            if (e.data?.type === "SYNC_TRIGGER") this.sync();
+          });
+
+          this.updateUI();
+        },
+
+        async sync() {
+          if (state.isSyncing || !state.isOnline) return;
+
+          const pending = state.transactions.filter(
+            (t) => t.syncStatus === "pending",
+          );
+          const pendingBudgets = Object.entries(state.budgets).filter(
+            ([k, v]) => v._pending,
+          );
+          const pendingGoals = state.goals.filter(
+            (g) => g.syncStatus === "pending",
+          );
+
+          const totalPending =
+            pending.length + pendingBudgets.length + pendingGoals.length;
+          if (totalPending === 0) return;
+
+          state.isSyncing = true;
+          this.updateUI();
+          this.showOverlay();
+
+          try {
+            for (const tx of pending) {
+              try {
+                await this.syncItem("transactions", tx);
+                tx.syncStatus = "synced";
+                tx.syncedAt = Date.now();
+                await DB.put("transactions", tx);
+              } catch (err) {
+                console.error("Sync tx failed:", tx.id, err);
+              }
+            }
+
+            for (const [cat, val] of pendingBudgets) {
+              try {
+                const budgetData = {
+                  category: cat,
+                  amount: val,
+                  updatedAt: Date.now(),
+                };
+                await this.syncItem("budgets", budgetData);
+                delete state.budgets[cat]._pending;
+                await DB.put("budgets", {
+                  ...budgetData,
+                  syncStatus: "synced",
+                });
+              } catch (err) {
+                console.error("Sync budget failed:", cat, err);
+              }
+            }
+
+            for (const goal of pendingGoals) {
+              try {
+                await this.syncItem("goals", goal);
+                goal.syncStatus = "synced";
+                goal.syncedAt = Date.now();
+                await DB.put("goals", goal);
+              } catch (err) {
+                console.error("Sync goal failed:", goal.id, err);
+              }
+            }
+
+            state.lastSync = Date.now();
+            await DB.setMeta("lastSync", state.lastSync);
+
+            const remaining = state.transactions.filter(
+              (t) => t.syncStatus === "pending",
+            ).length;
+            if (remaining === 0) {
+              showToast("Semua data tersync ke server! ✅", "success");
+            }
+          } catch (err) {
+            console.error("Sync error:", err);
+          } finally {
+            state.isSyncing = false;
+            this.hideOverlay();
+            this.updateUI();
+            renderTransactions();
+          }
+        },
+
+        async syncItem(type, data) {
+          if (!CONFIG.API_URL) {
+            await new Promise((r) => setTimeout(r, 150 + Math.random() * 200));
+            return;
+          }
+
+          const response = await fetch(`${CONFIG.API_URL}/${type}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              ...(CONFIG.API_KEY
+                ? { Authorization: `Bearer ${CONFIG.API_KEY}` }
+                : {}),
+            },
+            body: JSON.stringify(data),
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        },
+
+        async getPendingCount() {
+          return (
+            state.transactions.filter((t) => t.syncStatus === "pending")
+              .length +
+            state.goals.filter((g) => g.syncStatus === "pending").length
+          );
+        },
+
+        updateUI() {
+          const bar = document.getElementById("syncStatus");
+          const text = document.getElementById("syncText");
+
+          bar.className = "sync-bar";
+
+          if (!state.isOnline) {
+            bar.classList.add("offline");
+            text.textContent = "Offline";
+          } else if (state.isSyncing) {
+            bar.classList.add("syncing");
+            text.textContent = "Syncing...";
+          } else {
+            bar.classList.add("online");
+            text.textContent = "Online";
+          }
+
+          this.updateSettingsUI();
+        },
+
+        async updateSettingsUI() {
+          const statusEl = document.getElementById("settingsSyncStatus");
+          const detailEl = document.getElementById("settingsSyncDetail");
+          const pendingEl = document.getElementById("settingsPending");
+
+          if (!statusEl) return;
+
+          const pending = await this.getPendingCount();
+
+          if (!state.isOnline) {
+            statusEl.textContent = "🔴 Offline";
+          } else if (state.isSyncing) {
+            statusEl.textContent = "🔄 Syncing...";
+          } else {
+            statusEl.textContent = "🟢 Online";
+          }
+
+          if (state.lastSync) {
+            const ago = this.timeAgo(state.lastSync);
+            detailEl.textContent = `Terakhir sync: ${ago}`;
+          } else {
+            detailEl.textContent = "Terakhir sync: belum pernah";
+          }
+
+          pendingEl.textContent = `${pending} item menunggu sync`;
+        },
+
+        timeAgo(timestamp) {
+          const diff = Date.now() - timestamp;
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return "baru saja";
+          if (mins < 60) return `${mins} menit lalu`;
+          const hours = Math.floor(mins / 60);
+          if (hours < 24) return `${hours} jam lalu`;
+          const days = Math.floor(hours / 24);
+          return `${days} hari lalu`;
+        },
+
+        showOverlay() {
+          document.getElementById("syncOverlay").classList.add("show");
+        },
+        hideOverlay() {
+          document.getElementById("syncOverlay").classList.remove("show");
+        },
+      };
+
+      // ===== UTILITIES =====
+      function fmt(num) {
+        num = Math.round(Number(num) || 0);
+        return "Rp " + num.toLocaleString("id-ID");
+      }
+      function fmtShort(num) {
+        num = Number(num) || 0;
+        if (num >= 1000000)
+          return "Rp " + (num / 1000000).toFixed(1).replace(".0", "") + "jt";
+        if (num >= 1000) return "Rp " + (num / 1000).toFixed(0) + "rb";
+        return "Rp " + num;
+      }
+      function genId() {
+        return (
+          Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
+        );
+      }
+      function getCat(id, type = "expense") {
+        const list = type === "income" ? CATS_INCOME : CATS_EXPENSE;
+        return (
+          list.find((c) => c.id === id) || CATS_EXPENSE[CATS_EXPENSE.length - 1]
+        );
+      }
+      function isCurrentMonth(dateStr) {
+        const d = new Date(dateStr);
+        return (
+          d.getMonth() === state.currentMonth &&
+          d.getFullYear() === state.currentYear
+        );
+      }
+
+      // ===== DATA LOAD/SAVE =====
+      async function loadData() {
+        state.transactions = await DB.getAll("transactions");
+        state.goals = await DB.getAll("goals");
+
+        const budgets = await DB.getAll("budgets");
+        if (budgets.length > 0) {
+          budgets.forEach((b) => {
+            state.budgets[b.category] = b.amount;
+          });
+        }
+
+        if (state.transactions.length === 0 && state.goals.length === 0) {
+          await seedSampleData();
+        }
+      }
+
+      async function seedSampleData() {
+        const today = new Date();
+        const day = today.getDate();
+
+        await saveTransaction(
+          {
+            id: genId(),
+            type: "income",
+            category: "uang_jajan",
+            amount: 2500000,
+            note: "Uang bulanan dari rumah",
+            date: new Date(today.getFullYear(), today.getMonth(), 1)
+              .toISOString()
+              .split("T")[0],
+            createdAt: Date.now() - 8000000,
+            syncStatus: "synced",
+            syncedAt: Date.now() - 8000000,
+          },
+          false,
+        );
+
+        const samples = [
+          {
+            type: "expense",
+            category: "kos",
+            amount: 600000,
+            note: "Bayar kos bulanan",
+            offset: 1,
+          },
+          {
+            type: "expense",
+            category: "makan",
+            amount: 18000,
+            note: "Sarapan nasi uduk",
+            offset: 2,
+          },
+          {
+            type: "expense",
+            category: "makan",
+            amount: 25000,
+            note: "Makan siang warteg",
+            offset: 2,
+          },
+          {
+            type: "expense",
+            category: "transport",
+            amount: 15000,
+            note: "Gojek ke kampus",
+            offset: 1,
+          },
+          {
+            type: "expense",
+            category: "pulsa",
+            amount: 50000,
+            note: "Kuota internet bulanan",
+            offset: 3,
+          },
+          {
+            type: "expense",
+            category: "makan",
+            amount: 30000,
+            note: "Kopi + roti",
+            offset: 1,
+          },
+          {
+            type: "expense",
+            category: "hiburan",
+            amount: 45000,
+            note: "Nonton bioskop",
+            offset: 4,
+          },
+          {
+            type: "expense",
+            category: "belanja",
+            amount: 35000,
+            note: "Sabun + shampo",
+            offset: 3,
+          },
+          {
+            type: "expense",
+            category: "makan",
+            amount: 22000,
+            note: "Makan malam",
+            offset: 1,
+          },
+          {
+            type: "expense",
+            category: "transport",
+            amount: 12000,
+            note: "Angkot pulang",
+            offset: 2,
+          },
+          {
+            type: "income",
+            category: "freelance",
+            amount: 300000,
+            note: "Projek design logo",
+            offset: 5,
+          },
+          {
+            type: "expense",
+            category: "makan",
+            amount: 28000,
+            note: "Makan siang",
+            offset: 0,
+          },
+        ];
+
+        for (const s of samples) {
+          const d = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            Math.max(1, day - s.offset + 1),
+          );
+          if (d <= today) {
+            await saveTransaction(
+              {
+                id: genId(),
+                type: s.type,
+                category: s.category,
+                amount: s.amount,
+                note: s.note,
+                date: d.toISOString().split("T")[0],
+                createdAt: d.getTime(),
+                syncStatus: "synced",
+                syncedAt: d.getTime(),
+              },
+              false,
+            );
+          }
+        }
+
+        await saveGoal(
+          {
+            id: genId(),
+            name: "Pulang Kampung Lebaran",
+            target: 2000000,
+            current: 750000,
+            syncStatus: "synced",
+            syncedAt: Date.now(),
+          },
+          false,
+        );
+        await saveGoal(
+          {
+            id: genId(),
+            name: "Beli Laptop Baru",
+            target: 8000000,
+            current: 3200000,
+            syncStatus: "synced",
+            syncedAt: Date.now(),
+          },
+          false,
+        );
+
+        for (const [cat, amount] of Object.entries(DEFAULT_BUDGETS)) {
+          await DB.put("budgets", {
+            category: cat,
+            amount,
+            syncStatus: "synced",
+            updatedAt: Date.now(),
+          });
+        }
+      }
+
+      async function saveTransaction(tx, showToastMsg = true) {
+        state.transactions.push(tx);
+        await DB.put("transactions", tx);
+        if (showToastMsg) {
+          showToast("Transaksi tersimpan! 📝", "success");
+        }
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      async function deleteTransaction(id) {
+        state.transactions = state.transactions.filter((t) => t.id !== id);
+        await DB.delete("transactions", id);
+        renderAll();
+        showToast("Transaksi dihapus", "success");
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      async function saveGoal(goal, showToastMsg = true) {
+        state.goals.push(goal);
+        await DB.put("goals", goal);
+        if (showToastMsg) showToast("Target ditambahkan! 🎯", "success");
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      async function updateGoal(id, updates) {
+        const goal = state.goals.find((g) => g.id === id);
+        if (!goal) return;
+        Object.assign(goal, updates, { syncStatus: "pending" });
+        await DB.put("goals", goal);
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      async function deleteGoal(id) {
+        state.goals = state.goals.filter((g) => g.id !== id);
+        await DB.delete("goals", id);
+        renderGoals();
+        showToast("Target dihapus", "success");
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      // ===== CALCULATIONS =====
+      function getTotals() {
+        const txs = state.transactions.filter((t) => isCurrentMonth(t.date));
+        const income = txs
+          .filter((t) => t.type === "income")
+          .reduce((s, t) => s + t.amount, 0);
+        const expense = txs
+          .filter((t) => t.type === "expense")
+          .reduce((s, t) => s + t.amount, 0);
+        return { income, expense, balance: income - expense };
+      }
+
+      function getCatTotals() {
+        const txs = state.transactions.filter(
+          (t) => isCurrentMonth(t.date) && t.type === "expense",
+        );
+        const totals = {};
+        CATS_EXPENSE.forEach((c) => (totals[c.id] = 0));
+        txs.forEach((t) => {
+          if (totals[t.category] !== undefined) totals[t.category] += t.amount;
+          else totals["lainnya"] = (totals["lainnya"] || 0) + t.amount;
+        });
+        return totals;
+      }
+
+      function getDailyExpenses(days) {
+        const result = [];
+        const today = new Date();
+        const isThisMonth =
+          today.getMonth() === state.currentMonth &&
+          today.getFullYear() === state.currentYear;
+        const endDay = isThisMonth
+          ? today.getDate()
+          : new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+        const startDay = Math.max(1, endDay - days + 1);
+
+        for (let d = startDay; d <= endDay; d++) {
+          const date = new Date(state.currentYear, state.currentMonth, d);
+          const dateStr = date.toISOString().split("T")[0];
+          const total = state.transactions
+            .filter((t) => t.date === dateStr && t.type === "expense")
+            .reduce((s, t) => s + t.amount, 0);
+          result.push({ date: dateStr, day: d, total });
+        }
+        return result;
+      }
+
+      // ===== RENDERING =====
+      function renderAll() {
+        renderHero();
+        renderStatus();
+        renderBudget();
+        renderPieChart();
+        renderBarChart();
+        renderTransactions();
+        renderGoals();
+        updateTip();
+      }
+
+      function renderHero() {
+        const { income, expense, balance } = getTotals();
+        animateNum("saldoDisplay", balance);
+        animateNum("incomeDisplay", income);
+        animateNum("expenseDisplay", expense);
+        animateNum("remainingDisplay", balance);
+
+        const today = new Date();
+        const isThisMonth =
+          today.getMonth() === state.currentMonth &&
+          today.getFullYear() === state.currentYear;
+        const dayCount = isThisMonth
+          ? today.getDate()
+          : new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+        const dailyAvg = dayCount > 0 ? expense / dayCount : 0;
+        animateNum("dailyAvg", dailyAvg);
+
+        const daysInMonth = new Date(
+          state.currentYear,
+          state.currentMonth + 1,
+          0,
+        ).getDate();
+        const remainingDays = isThisMonth ? daysInMonth - today.getDate() : 0;
+        const predicted = expense + dailyAvg * remainingDays;
+        animateNum("prediction", predicted);
+      }
+
+      function animateNum(id, target) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = parseFloat(el.dataset.val || 0);
+        const duration = 700;
+        const start = performance.now();
+
+        function step(now) {
+          const t = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const val = current + (target - current) * eased;
+          el.textContent = fmt(val);
+          if (t < 1) requestAnimationFrame(step);
+          else el.dataset.val = target;
+        }
+        requestAnimationFrame(step);
+      }
+
+      function renderStatus() {
+        const { expense } = getTotals();
+        const totalBudget = Object.values(state.budgets).reduce(
+          (s, v) => s + Number(v || 0),
+          0,
+        );
+        const percent =
+          totalBudget > 0 ? Math.min(100, (expense / totalBudget) * 100) : 0;
+
+        const title = document.getElementById("statusTitle");
+        const desc = document.getElementById("statusDesc");
+        const prog = document.getElementById("statusProgress");
+        const pct = document.getElementById("statusPercent");
+        const card = document.getElementById("statusCard");
+
+        pct.textContent = percent.toFixed(0) + "%";
+        prog.style.width = percent + "%";
+        card.classList.remove("ampas");
+
+        if (percent < 50) {
+          title.textContent = "Aman, Sob!";
+          title.style.color = "var(--success)";
+          desc.textContent =
+            "Pengeluaran masih dalam batas wajar. Pertahankan!";
+          prog.style.background = "var(--success)";
+        } else if (percent < 80) {
+          title.textContent = "Hati-hati ya";
+          title.style.color = "var(--yellow)";
+          desc.textContent = "Pengeluaran mulai menumpuk. Kurangi jajan dulu.";
+          prog.style.background = "var(--yellow)";
+        } else if (percent < 100) {
+          title.textContent = "Hampir Ampas!";
+          title.style.color = "var(--coral)";
+          desc.textContent =
+            "Budget tinggal dikit. Wajib hemat ekstra sampai akhir bulan.";
+          prog.style.background = "var(--coral)";
+          card.classList.add("ampas");
+        } else {
+          title.textContent = "Ampas Bulan Ini 😭";
+          title.style.color = "var(--danger)";
+          desc.textContent =
+            "Budget sudah over! Yuk evaluasi pengeluaran kamu.";
+          prog.style.background = "var(--danger)";
+          card.classList.add("ampas");
+        }
+      }
+
+      function renderBudget() {
+        const grid = document.getElementById("budgetGrid");
+        const totals = getCatTotals();
+
+        grid.innerHTML = CATS_EXPENSE.map((cat) => {
+          const spent = totals[cat.id] || 0;
+          const budget = state.budgets[cat.id] || 0;
+          const percent =
+            budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+          const isOver = budget > 0 && spent > budget;
+          const isWarn = budget > 0 && percent >= 80 && !isOver;
+          const barColor = isOver
+            ? "var(--danger)"
+            : isWarn
+              ? "var(--yellow)"
+              : cat.color;
+          const remaining = budget - spent;
+
+          return `
+      <div class="card card-hover budget-card">
+        <div class="budget-head">
+          <div class="budget-cat">
+            <div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${cat.emoji}</div>
+            <div>
+              <div class="budget-name">${cat.name}</div>
+              <div class="budget-limit">${fmtShort(budget)}</div>
+            </div>
+          </div>
+          ${isOver ? '<span class="badge badge-over">Over</span>' : isWarn ? '<span class="badge badge-warn">Hampir habis</span>' : ""}
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${percent}%;background:${barColor}"></div></div>
+        <div class="budget-foot">
+          <span class="muted">${fmtShort(spent)} terpakai</span>
+          <span class="font-semibold" style="color:${isOver ? "var(--danger)" : "var(--fg)"}">
+            ${isOver ? "+" + fmtShort(Math.abs(remaining)) : fmtShort(remaining) + " sisa"}
+          </span>
+        </div>
+      </div>
+    `;
+        }).join("");
+      }
+
+      function renderPieChart() {
+        const totals = getCatTotals();
+        const data = CATS_EXPENSE.map((c) => ({
+          ...c,
+          value: totals[c.id] || 0,
+        })).filter((c) => c.value > 0);
+        const empty = document.getElementById("pieEmpty");
+        const wrap = document.getElementById("pieChartWrap");
+        const ring = document.getElementById("pieRing");
+        const legend = document.getElementById("pieLegend");
+        const totalVal = document.getElementById("pieTotalValue");
+
+        if (data.length === 0) {
+          empty.classList.remove("hidden");
+          wrap.style.display = "none";
+          return;
+        }
+        empty.classList.add("hidden");
+        wrap.style.display = "";
+
+        const total = data.reduce((s, d) => s + d.value, 0);
+        totalVal.textContent = fmtShort(total);
+
+        let gradient = "conic-gradient(";
+        let acc = 0;
+        data.forEach((d, i) => {
+          const pct = (d.value / total) * 100;
+          gradient += `${d.color} ${acc}% ${acc + pct}%`;
+          if (i < data.length - 1) gradient += ", ";
+          acc += pct;
+        });
+        gradient += ")";
+        ring.style.background = gradient;
+
+        legend.innerHTML = data
+          .map((d) => {
+            const pct = total > 0 ? ((d.value / total) * 100).toFixed(0) : 0;
+            return `
+      <div class="legend-item">
+        <div class="legend-label">
+          <span class="legend-dot" style="background:${d.color}"></span>
+          <span>${d.name}</span>
+        </div>
+        <span class="font-semibold">${pct}%</span>
+      </div>
+    `;
+          })
+          .join("");
+      }
+
+      function renderBarChart() {
+        const container = document.getElementById("barChart");
+        const data = getDailyExpenses(state.chartRange);
+
+        if (data.length === 0) {
+          container.innerHTML =
+            '<div class="empty" style="width:100%"><div class="empty-icon">📊</div><div class="text-sm">Belum ada data</div></div>';
+          return;
+        }
+
+        const maxVal = Math.max(...data.map((d) => d.total), 1);
+        const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
+
+        container.innerHTML = data
+          .map((d) => {
+            const heightPct = (d.total / maxVal) * 100;
+            const isHigh = d.total > avg * 1.3;
+            const color = isHigh ? "var(--coral)" : "var(--lime)";
+            return `
+      <div class="bar-col">
+        <div class="bar" style="height:${heightPct}%;background:${color}" title="${fmt(d.total)}"></div>
+        <div class="bar-label">${d.day}</div>
+      </div>
+    `;
+          })
+          .join("");
+      }
+
+      function renderTransactions() {
+        const list = document.getElementById("txList");
+        const filterCat = document.getElementById("filterCat").value;
+        const filterType = document.getElementById("filterType").value;
+
+        let txs = state.transactions
+          .filter((t) => isCurrentMonth(t.date))
+          .filter((t) => filterType === "all" || t.type === filterType)
+          .filter((t) => filterCat === "all" || t.category === filterCat)
+          .sort(
+            (a, b) =>
+              new Date(b.date) - new Date(a.date) || b.createdAt - a.createdAt,
+          );
+
+        if (txs.length === 0) {
+          list.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="text-sm font-medium mb-1">Belum ada transaksi</div>
+        <div class="text-xs">Yuk catat transaksi pertamamu!</div>
+      </div>
+    `;
+          return;
+        }
+
+        const grouped = {};
+        txs.forEach((t) => {
+          if (!grouped[t.date]) grouped[t.date] = [];
+          grouped[t.date].push(t);
+        });
+
+        const sortedDates = Object.keys(grouped).sort(
+          (a, b) => new Date(b) - new Date(a),
+        );
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        list.innerHTML = sortedDates
+          .map((date) => {
+            const dayTxs = grouped[date];
+            const dayTotal = dayTxs.reduce(
+              (s, t) => s + (t.type === "expense" ? t.amount : -t.amount),
+              0,
+            );
+            const dateObj = new Date(date);
+            let label = dateObj.toLocaleDateString("id-ID", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            });
+            if (dateObj.toDateString() === today.toDateString())
+              label = "Hari ini";
+            else if (dateObj.toDateString() === yesterday.toDateString())
+              label = "Kemarin";
+
+            return `
+      <div style="margin-bottom:8px">
+        <div class="tx-date">
+          <span class="tx-date-label">${label}</span>
+          <span class="text-xs font-semibold" style="color:${dayTotal < 0 ? "var(--success)" : "var(--danger)"}">
+            ${dayTotal < 0 ? "+" : ""}${fmtShort(Math.abs(dayTotal))}
+          </span>
+        </div>
+        ${dayTxs.map((t) => renderTxItem(t)).join("")}
+      </div>
+    `;
+          })
+          .join("");
+      }
+
+      function renderTxItem(t) {
+        const cat = getCat(t.category, t.type);
+        const isIncome = t.type === "income";
+        const sign = isIncome ? "+" : "-";
+        const color = isIncome ? "var(--success)" : "var(--fg)";
+        const syncIcon =
+          t.syncStatus === "pending"
+            ? '<span class="tx-sync pending" title="Menunggu sync"></span>'
+            : '<span class="tx-sync synced" title="Tersync"></span>';
+
+        return `
+    <div class="tx-item">
+      <div class="tx-icon" style="background:${cat.color}22;color:${cat.color}">${cat.emoji}</div>
+      <div class="tx-info">
+        <div class="tx-note">${t.note || cat.name}</div>
+        <div class="tx-cat">${cat.name}</div>
+      </div>
+      ${syncIcon}
+      <div class="tx-amount" style="color:${color}">${sign}${fmtShort(t.amount)}</div>
+      <button class="tx-del" onclick="deleteTransaction('${t.id}')">🗑</button>
+    </div>
+  `;
+      }
+
+      function renderGoals() {
+        const grid = document.getElementById("goalsGrid");
+
+        if (state.goals.length === 0) {
+          grid.innerHTML = `
+      <div class="card empty" style="grid-column:1/-1">
+        <div class="empty-icon">🎯</div>
+        <div class="text-sm font-medium mb-1">Belum ada target</div>
+        <div class="text-xs">Wujudkan impianmu dengan menambah target</div>
+      </div>
+    `;
+          return;
+        }
+
+        grid.innerHTML = state.goals
+          .map((g) => {
+            const percent = Math.min(100, (g.current / g.target) * 100);
+            const remaining = Math.max(0, g.target - g.current);
+            const isAchieved = g.current >= g.target;
+            const circ = 2 * Math.PI * 32;
+            const offset = circ - (percent / 100) * circ;
+
+            return `
+      <div class="card card-hover goal-card">
+        ${isAchieved ? '<div class="badge badge-over" style="position:absolute;top:12px;right:12px;background:rgba(74,222,128,.15);color:var(--success)">✓ Tercapai</div>' : ""}
+        <div class="goal-head">
+          <div class="goal-ring">
+            <svg viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="${isAchieved ? "var(--success)" : "var(--lime)"}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="goal-ring-text">${percent.toFixed(0)}%</div>
+          </div>
+          <div style="min-width:0;flex:1">
+            <div class="goal-name">${g.name}</div>
+            <div class="goal-amount">${fmtShort(g.current)} / ${fmtShort(g.target)}</div>
+            <div class="goal-remaining" style="color:${isAchieved ? "var(--success)" : "var(--lime)"}">
+              ${isAchieved ? "Selamat! 🎉" : "Sisa " + fmtShort(remaining)}
+            </div>
+          </div>
+        </div>
+        ${
+          !isAchieved
+            ? `
+          <div class="goal-actions">
+            <button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}',50000)">+50rb</button>
+            <button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}',100000)">+100rb</button>
+            <button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}',500000)">+500rb</button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteGoal('${g.id}')" style="flex:0;padding:6px 8px">🗑</button>
+          </div>
+        `
+            : `<button class="btn btn-ghost btn-sm" style="width:100%" onclick="deleteGoal('${g.id}')">Hapus target</button>`
+        }
+      </div>
+    `;
+          })
+          .join("");
+      }
+
+      function updateTip() {
+        const today = new Date().getDate();
+        document.getElementById("tipText").textContent =
+          TIPS[(today - 1) % TIPS.length];
+      }
+
+      // ===== MODALS =====
+      function openModal(id) {
+        document.getElementById(id).classList.add("active");
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("active");
+      }
+
+      function setupTxModal() {
+        const container = document.getElementById("txCats");
+        const list =
+          state.selectedType === "income" ? CATS_INCOME : CATS_EXPENSE;
+
+        container.innerHTML = list
+          .map(
+            (c) => `
+    <button type="button" class="cat-chip ${c.id === state.selectedCat ? "selected" : ""}" data-cat="${c.id}">
+      <span style="font-size:16px">${c.emoji}</span>
+      <span>${c.name}</span>
+    </button>
+  `,
+          )
+          .join("");
+
+        container.querySelectorAll(".cat-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            container
+              .querySelectorAll(".cat-chip")
+              .forEach((c) => c.classList.remove("selected"));
+            chip.classList.add("selected");
+            state.selectedCat = chip.dataset.cat;
+          });
+        });
+
+        document.getElementById("txDate").value = new Date()
+          .toISOString()
+          .split("T")[0];
+      }
+
+      function setupBudgetModal() {
+        const container = document.getElementById("budgetInputs");
+        container.innerHTML = CATS_EXPENSE.map(
+          (c) => `
+    <div class="form-group">
+      <label class="form-label">${c.emoji} ${c.name}</label>
+      <div class="input-wrap">
+        <span class="input-prefix">Rp</span>
+        <input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${state.budgets[c.id] || 0}" min="0" step="1000" inputmode="numeric">
+      </div>
+    </div>
+  `,
+        ).join("");
+      }
+
+      // ===== ACTIONS =====
+      async function handleAddTx(e) {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById("txAmount").value);
+        const note = document.getElementById("txNote").value.trim();
+        const date = document.getElementById("txDate").value;
+
+        if (!amount || amount <= 0) {
+          showToast("Nominal harus lebih dari 0", "warning");
+          return;
+        }
+
+        const tx = {
+          id: genId(),
+          type: state.selectedType,
+          category: state.selectedCat,
+          amount,
+          note,
+          date,
+          createdAt: Date.now(),
+          syncStatus: "pending",
+        };
+
+        await saveTransaction(tx);
+        renderAll();
+
+        document.getElementById("txForm").reset();
+        document.getElementById("txDate").value = new Date()
+          .toISOString()
+          .split("T")[0];
+        closeModal("modalTx");
+
+        if (tx.type === "expense") {
+          checkBudgetWarning(tx.category);
+        }
+      }
+
+      function checkBudgetWarning(catId) {
+        const totals = getCatTotals();
+        const spent = totals[catId] || 0;
+        const budget = state.budgets[catId] || 0;
+
+        if (budget > 0 && spent >= budget * 0.9 && spent < budget) {
+          const cat = getCat(catId);
+          showToast(
+            `Budget ${cat.name} udah ${((spent / budget) * 100).toFixed(0)}% terpakai!`,
+            "warning",
+          );
+        } else if (budget > 0 && spent > budget) {
+          const cat = getCat(catId);
+          showToast(
+            `Budget ${cat.name} over ${fmtShort(spent - budget)}!`,
+            "danger",
+          );
+        }
+      }
+
+      async function addGoalProgress(id, amount) {
+        const goal = state.goals.find((g) => g.id === id);
+        if (!goal) return;
+
+        const wasAchieved = goal.current >= goal.target;
+        goal.current = Math.min(goal.target, goal.current + amount);
+        await updateGoal(id, { current: goal.current });
+        renderGoals();
+
+        if (!wasAchieved && goal.current >= goal.target) {
+          showToast(`Selamat! Target "${goal.name}" tercapai! 🎉`, "success");
+        } else {
+          showToast(`+${fmtShort(amount)} ke ${goal.name}`, "success");
+        }
+      }
+
+      async function handleAddGoal(e) {
+        e.preventDefault();
+        const name = document.getElementById("goalName").value.trim();
+        const target = parseFloat(document.getElementById("goalTarget").value);
+        const current =
+          parseFloat(document.getElementById("goalCurrent").value) || 0;
+
+        if (!name || target < 1000) {
+          showToast("Isi nama dan minimal target Rp 1.000", "warning");
+          return;
+        }
+
+        await saveGoal({
+          id: genId(),
+          name,
+          target,
+          current: Math.min(current, target),
+          syncStatus: "pending",
+        });
+        renderGoals();
+        closeModal("modalGoal");
+        document.getElementById("goalForm").reset();
+      }
+
+      async function handleSaveBudget(e) {
+        e.preventDefault();
+        const inputs = document.querySelectorAll(".budget-input");
+        for (const input of inputs) {
+          const cat = input.dataset.cat;
+          const val = parseFloat(input.value) || 0;
+          state.budgets[cat] = val;
+          await DB.put("budgets", {
+            category: cat,
+            amount: val,
+            syncStatus: "pending",
+            updatedAt: Date.now(),
+          });
+        }
+        renderAll();
+        closeModal("modalBudget");
+        showToast("Budget diperbarui!", "success");
+        if (state.isOnline) SyncMgr.sync();
+      }
+
+      async function handleReset() {
+        if (
+          !confirm(
+            "Yakin reset semua data? Semua transaksi, budget, dan target akan dihapus.",
+          )
+        )
+          return;
+
+        await DB.clear("transactions");
+        await DB.clear("budgets");
+        await DB.clear("goals");
+        await DB.clear("meta");
+
+        state.transactions = [];
+        state.goals = [];
+        state.budgets = { ...DEFAULT_BUDGETS };
+
+        renderAll();
+        closeModal("modalSettings");
+        showToast("Data berhasil direset", "success");
+      }
+
+      async function handleSaveSettings() {
+        const url = document.getElementById("apiUrl").value.trim();
+        const key = document.getElementById("apiKey").value.trim();
+
+        CONFIG.API_URL = url;
+        CONFIG.API_KEY = key;
+        localStorage.setItem("dk_api_url", url);
+        localStorage.setItem("dk_api_key", key);
+
+        closeModal("modalSettings");
+        showToast("Pengaturan disimpan!", "success");
+
+        if (url && state.isOnline) {
+          SyncMgr.sync();
+        }
+      }
+
+      // ===== TOAST =====
+      let toastTimer;
+      function showToast(msg, type = "success") {
+        const toast = document.getElementById("toast");
+        const text =
+          document.getElementById("toast-text") ||
+          toast.querySelector(".toast-text");
+        const icon = toast.querySelector(".toast-icon");
+
+        toast.className = "toast " + type;
+        text.textContent = msg;
+
+        const icons = { success: "✓", warning: "⚠️", danger: "❌" };
+        icon.textContent = icons[type] || "✓";
+
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+      }
+
+      // ===== PWA SETUP =====
+      function setupPWA() {
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker
+              .register("./sw.js")
+              .then((reg) => console.log("SW registered:", reg.scope))
+              .catch((err) =>
+                console.warn("SW registration failed:", err.message),
+              );
+          });
+        }
+
+        let deferredPrompt;
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          showInstallBanner(deferredPrompt);
+        });
+
+        window.addEventListener("appinstalled", () => {
+          document.getElementById("installBanner")?.classList.remove("show");
+          document.getElementById("btnInstall")?.classList.add("hidden");
+          showToast("DompetKos terpasang! 🎉", "success");
+        });
+      }
+
+      function showInstallBanner(deferredPrompt) {
+        const banner = document.getElementById("installBanner");
+        const btnInstall = document.getElementById("btnInstall");
+
+        setTimeout(() => {
+          if (!localStorage.getItem("dk_install_dismissed")) {
+            banner.classList.add("show");
+          }
+          btnInstall.classList.remove("hidden");
+        }, 3000);
+
+        document
+          .getElementById("installYes")
+          .addEventListener("click", async () => {
+            banner.classList.remove("show");
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+          });
+
+        document.getElementById("installNo").addEventListener("click", () => {
+          banner.classList.remove("show");
+          localStorage.setItem("dk_install_dismissed", "1");
+        });
+
+        btnInstall.addEventListener("click", async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            btnInstall.classList.add("hidden");
+          }
+        });
+      }
+
+      // ===== INIT =====
+      async function init() {
+        await DB.init();
+        await loadData();
+
+        const filterCat = document.getElementById("filterCat");
+        [...CATS_EXPENSE, ...CATS_INCOME].forEach((c) => {
+          if (!filterCat.querySelector(`option[value="${c.id}"]`)) {
+            const opt = document.createElement("option");
+            opt.value = c.id;
+            opt.textContent = c.name;
+            filterCat.appendChild(opt);
+          }
+        });
+        filterCat.addEventListener("change", renderTransactions);
+        document
+          .getElementById("filterType")
+          .addEventListener("change", renderTransactions);
+
+        document.querySelectorAll("#rangeTabs .tab").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll("#rangeTabs .tab")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            state.chartRange = parseInt(btn.dataset.range);
+            renderBarChart();
+          });
+        });
+
+        document.querySelectorAll(".type-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            document
+              .querySelectorAll(".type-btn")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            state.selectedType = btn.dataset.type;
+            const list =
+              state.selectedType === "income" ? CATS_INCOME : CATS_EXPENSE;
+            state.selectedCat = list[0].id;
+            setupTxModal();
+          });
+        });
+
+        document.getElementById("fabAdd").addEventListener("click", () => {
+          setupTxModal();
+          openModal("modalTx");
+        });
+        document
+          .getElementById("btnEditBudget")
+          .addEventListener("click", () => {
+            setupBudgetModal();
+            openModal("modalBudget");
+          });
+        document
+          .getElementById("btnAddGoal")
+          .addEventListener("click", () => openModal("modalGoal"));
+        document.getElementById("btnSettings").addEventListener("click", () => {
+          document.getElementById("apiUrl").value = CONFIG.API_URL;
+          document.getElementById("apiKey").value = CONFIG.API_KEY;
+          SyncMgr.updateSettingsUI();
+          openModal("modalSettings");
+        });
+
+        document.querySelectorAll("[data-close]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            btn.closest(".modal-bg").classList.remove("active");
+          });
+        });
+        document.querySelectorAll(".modal-bg").forEach((modal) => {
+          modal.addEventListener("click", (e) => {
+            if (e.target === modal) modal.classList.remove("active");
+          });
+        });
+
+        document
+          .getElementById("txForm")
+          .addEventListener("submit", handleAddTx);
+        document
+          .getElementById("budgetForm")
+          .addEventListener("submit", handleSaveBudget);
+        document
+          .getElementById("goalForm")
+          .addEventListener("submit", handleAddGoal);
+        document
+          .getElementById("btnReset")
+          .addEventListener("click", handleReset);
+        document
+          .getElementById("btnSaveSettings")
+          .addEventListener("click", handleSaveSettings);
+        document
+          .getElementById("btnSyncNow")
+          .addEventListener("click", () => SyncMgr.sync());
+
+        await SyncMgr.init();
+        setupPWA();
+
+        state.selectedCat = CATS_EXPENSE[0].id;
+        renderAll();
+
+        setTimeout(() => {
+          showToast("Selamat datang di DompetKos! 💪", "success");
+        }, 600);
+      }
+
+      window.deleteTransaction = deleteTransaction;
+      window.addGoalProgress = addGoalProgress;
+      window.deleteGoal = deleteGoal;
+
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>

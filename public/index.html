@@ -1539,6 +1539,26 @@
           </div>
         </div>
       </section>
+
+      <section class="section">
+        <div class="card card-pad-lg">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <div class="section-sub">Prediksi</div>
+              <div style="font-size: 16px; font-weight: 700">
+                Simulasi Akhir Bulan
+              </div>
+            </div>
+            <span style="font-size: 14px; display: inline-flex"
+              ><span data-icon="target"></span
+            ></span>
+          </div>
+          <div
+            id="simulasiContent"
+            style="display: flex; flex-direction: column; gap: 12px"
+          ></div>
+        </div>
+      </section>
     </main>
 
     <button class="fab" id="fabAdd"><span data-icon="plus"></span></button>
@@ -2017,6 +2037,7 @@
         renderBarChart();
         renderTransactions();
         renderFilters();
+        renderSimulasi();
       }
 
       function renderHero() {
@@ -2037,6 +2058,39 @@
         document.getElementById("piutangDisplay").textContent = fmt(
           pendingIncome,
         );
+      }
+
+      function renderSimulasi() {
+        const cashIncome = state.transactions
+          .filter((t) => t.type === "income" && t.status === "received")
+          .reduce((s, t) => s + t.amount, 0);
+        const pendingIncome = state.transactions
+          .filter((t) => t.type === "income" && t.status === "pending")
+          .reduce((s, t) => s + t.amount, 0);
+
+        const fullMonthBudget = state.categories
+          .filter((c) => c.type === "expense")
+          .reduce((s, c) => s + getFullMonthBudget(c.id), 0);
+
+        const sisaTunaiAkhirBulan = cashIncome - fullMonthBudget;
+        const totalAkhirBulan = cashIncome + pendingIncome - fullMonthBudget;
+
+        const el = document.getElementById("simulasiContent");
+        el.innerHTML = `
+          <div class="flex justify-between text-sm">
+            <span class="muted">Estimasi Pengeluaran (Full Budget)</span>
+            <span class="font-semibold tabular">${fmt(fullMonthBudget)}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="muted">Estimasi Sisa Tunai (Tanpa Piutang)</span>
+            <span class="font-semibold tabular" style="color: ${sisaTunaiAkhirBulan < 0 ? "var(--danger)" : "var(--lime)"}">${fmt(sisaTunaiAkhirBulan)}</span>
+          </div>
+          <div style="border-top: 1px solid var(--border); margin: 4px 0;"></div>
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-md">Prediksi Total Saldo (Jika Piutang Cair)</span>
+            <span class="font-bold text-lg tabular" style="color: ${totalAkhirBulan < 0 ? "var(--danger)" : "var(--success)"}">${fmt(totalAkhirBulan)}</span>
+          </div>
+        `;
       }
 
       function renderIncome() {
@@ -2075,6 +2129,15 @@
               1;
             return b.amount * Math.max(1, remainingDays);
           }
+          return b.amount * daysInMonth(state.currentYear, state.currentMonth);
+        }
+        return b.amount || 0;
+      }
+
+      function getFullMonthBudget(catId) {
+        const b = state.budgets[catId];
+        if (!b) return 0;
+        if (b.type === "daily") {
           return b.amount * daysInMonth(state.currentYear, state.currentMonth);
         }
         return b.amount || 0;

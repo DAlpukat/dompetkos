@@ -2,3 +2,10 @@ node_modules/
 .vercel/
 .env
 .DS_Store
+
+# Firebase
+.firebase/
+.firebaserc
+firebase.json
+firestore.rules
+firebase-debug.log

@@ -120,9 +120,6 @@ textarea {
       .justify-between {
         justify-content: space-between;
       }
-      .justify-center {
-        justify-content: center;
-      }
       .gap-1 {
         gap: 4px;
       }
@@ -1014,7 +1011,7 @@ textarea {
         border: 1px solid var(--border2);
         border-radius: var(--radius-lg);
         width: calc(100% - 32px);
-        max-width: 100%;
+        max-width: 420px;
         max-height: 90vh;
         overflow-y: auto;
         transform: scale(0.9);
@@ -1785,7 +1782,7 @@ textarea {
           <div class="form-label" id="catListLabel">
             Daftar Kategori Pengeluaran
           </div>
-          <div id="catList" class="flex flex-row flex-wrap justify-center gap-2 mt-3"></div>
+          <div id="catList" class="flex flex-col gap-2 mt-3"></div>
         </div>
       </div>
     </div>

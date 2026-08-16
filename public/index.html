@@ -2777,6 +2777,7 @@ textarea {
         btn.style.animation = `hold-fill ${HOLD_MS}ms linear forwards`;
         hold = {
           btn,
+          start: Date.now(),
           timer: setTimeout(() => {
             hold = null;
             btn.classList.remove("holding");
@@ -2792,6 +2793,13 @@ textarea {
         hold.btn.style.animation = "";
         hold = null;
       }
+      function holdDeleteRelease() {
+        if (!hold) return;
+        const held = Date.now() - hold.start;
+        holdDeleteCancel();
+        if (held < HOLD_MS)
+          showToast("Tahan 2 detik untuk menghapus", "warning");
+      }
       document.addEventListener("pointerdown", (e) => {
         const btn = e.target.closest(
           "[data-del-tx],[data-del-cat],[data-del-goal]",
@@ -2800,7 +2808,7 @@ textarea {
         e.preventDefault();
         holdDeleteStart(btn);
       });
-      document.addEventListener("pointerup", holdDeleteCancel);
+      document.addEventListener("pointerup", holdDeleteRelease);
       document.addEventListener("pointercancel", holdDeleteCancel);
       document.addEventListener("pointermove", (e) => {
         if (hold && !hold.btn.contains(e.target)) holdDeleteCancel();

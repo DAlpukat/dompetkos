@@ -2228,7 +2228,17 @@ textarea {
         const b = state.budgets[catId];
         if (!b) return 0;
         if (b.type === "daily") {
-          return b.amount * daysInMonth(state.currentYear, state.currentMonth);
+          const y = state.currentYear;
+          const m = state.currentMonth;
+          if (b.createdAt) {
+            const [cy, cm, cd] = b.createdAt.split("-").map(Number);
+            if (cy === y && cm - 1 === m) {
+              return (
+                b.amount * Math.max(1, daysInMonth(y, m) - cd + 1)
+              );
+            }
+          }
+          return b.amount * daysInMonth(y, m);
         }
         return b.amount || 0;
       }
@@ -2458,27 +2468,42 @@ textarea {
       function setupBudgetModal() {
         const container = document.getElementById("budgetInputs");
         const dInMonth = daysInMonth(state.currentYear, state.currentMonth);
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
         container.innerHTML = state.categories.filter(c => c.type === "expense").map(c => {
           const b = state.budgets[c.id] || { amount: 0, type: "monthly" };
           const isDaily = b.type === "daily";
-          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${b.amount || 0}" min="0" step="1000" inputmode="numeric"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
+          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${b.amount || 0}" min="0" step="1000" inputmode="numeric"></div><div class="budget-start-wrap" data-cat="${c.id}" style="${isDaily ? "" : "display:none"};margin-top:8px"><label class="form-label" style="margin-bottom:2px">Mulai dari (untuk budget harian)</label><input type="date" class="budget-start" value="${b.createdAt || todayStr}"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
         }).join("");
 
         container.querySelectorAll(".budget-input-row").forEach(row => {
           const typeBtns = row.querySelectorAll(".budget-type-btn");
           const input = row.querySelector(".budget-input");
           const hint = row.querySelector(".convert-hint");
+          const startWrap = row.querySelector(".budget-start-wrap");
 
           const updateHint = () => {
             const amt = parseFloat(input.value) || 0;
             const activeBtn = row.querySelector(".budget-type-btn.active");
             const activeType = activeBtn ? activeBtn.dataset.type : "monthly";
+            if (startWrap)
+              startWrap.style.display = activeType === "daily" ? "" : "none";
             const today = new Date();
             const isThisMonth = today.getMonth() === state.currentMonth && today.getFullYear() === state.currentYear;
 
             if (activeType === "daily") {
               if (isThisMonth) {
-                const remainingDays = daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1;
+                const startInput = row.querySelector(".budget-start");
+                let anchorDay = today.getDate();
+                if (startInput?.value) {
+                  const [cy, cm, cd] = startInput.value.split("-").map(Number);
+                  if (cy === today.getFullYear() && cm - 1 === today.getMonth())
+                    anchorDay = cd;
+                }
+                const remainingDays =
+                  daysInMonth(state.currentYear, state.currentMonth) -
+                  anchorDay +
+                  1;
                 hint.innerHTML = `<span data-icon="trending_up" style="display:inline-flex;width:12px;height:12px"></span> Setara ${fmt(amt * Math.max(1, remainingDays))} sisa bulan ini (${remainingDays} hari)`;
               } else {
                 hint.innerHTML = `<span data-icon="trending_up" style="display:inline-flex;width:12px;height:12px"></span> Setara ${fmt(amt * dInMonth)} / bulan`;
@@ -2498,6 +2523,8 @@ textarea {
             };
           });
           input.addEventListener("input", updateHint);
+          const startInput = row.querySelector(".budget-start");
+          if (startInput) startInput.addEventListener("change", updateHint);
           updateHint();
         });
       }
@@ -2613,8 +2640,19 @@ textarea {
           const catId = input.dataset.cat;
           const val = parseFloat(input.value) || 0;
           const type = typeBtn ? typeBtn.dataset.type : "monthly";
-          await setDoc(doc(db, "budgets", catId), { amount: val, type });
-          state.budgets[catId] = { id: catId, amount: val, type };
+          const now = new Date();
+          const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+          const startInput = row.querySelector(".budget-start");
+          const createdAt =
+            (startInput && startInput.value) ||
+            state.budgets[catId]?.createdAt ||
+            todayStr;
+          await setDoc(doc(db, "budgets", catId), {
+            amount: val,
+            type,
+            createdAt,
+          });
+          state.budgets[catId] = { id: catId, amount: val, type, createdAt };
         }
         showToast("Budget diperbarui!", "success");
         document.getElementById("modalBudget").classList.remove("active");

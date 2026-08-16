@@ -854,6 +854,18 @@ textarea {
         background: rgba(248, 113, 113, 0.08);
         color: var(--danger);
       }
+      @keyframes hold-fill {
+        from {
+          background: rgba(248, 113, 113, 0);
+        }
+        to {
+          background: rgba(248, 113, 113, 0.95);
+        }
+      }
+      .holding {
+        color: #fff !important;
+        border-color: var(--danger) !important;
+      }
 
       .goal-grid {
         display: grid;
@@ -2094,9 +2106,7 @@ textarea {
         });
 
         const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-          .toISOString()
-          .split("T")[0];
+        const firstDay = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
         const qTx = query(
           collection(db, "transactions"),
           where("date", ">=", firstDay),
@@ -2117,7 +2127,19 @@ textarea {
       }
 
       // ===== RENDER UI =====
+      function syncMonth() {
+        const now = new Date();
+        if (
+          now.getMonth() !== state.currentMonth ||
+          now.getFullYear() !== state.currentYear
+        ) {
+          state.currentMonth = now.getMonth();
+          state.currentYear = now.getFullYear();
+        }
+      }
+
       function renderAll() {
+        syncMonth();
         renderHero();
         renderBudget();
         renderIncome();
@@ -2158,7 +2180,7 @@ textarea {
 
         const fullMonthBudget = state.categories
           .filter((c) => c.type === "expense")
-          .reduce((s, c) => s + getFullMonthBudget(c.id), 0);
+          .reduce((s, c) => s + getMonthlyBudget(c.id), 0);
 
         const sisaTunaiAkhirBulan = cashIncome - fullMonthBudget;
         const totalAkhirBulan = cashIncome + pendingIncome - fullMonthBudget;
@@ -2206,26 +2228,6 @@ textarea {
         const b = state.budgets[catId];
         if (!b) return 0;
         if (b.type === "daily") {
-          const today = new Date();
-          const isThisMonth =
-            today.getMonth() === state.currentMonth &&
-            today.getFullYear() === state.currentYear;
-          if (isThisMonth) {
-            const remainingDays =
-              daysInMonth(state.currentYear, state.currentMonth) -
-              today.getDate() +
-              1;
-            return b.amount * Math.max(1, remainingDays);
-          }
-          return b.amount * daysInMonth(state.currentYear, state.currentMonth);
-        }
-        return b.amount || 0;
-      }
-
-      function getFullMonthBudget(catId) {
-        const b = state.budgets[catId];
-        if (!b) return 0;
-        if (b.type === "daily") {
           return b.amount * daysInMonth(state.currentYear, state.currentMonth);
         }
         return b.amount || 0;
@@ -2257,7 +2259,7 @@ textarea {
         const remainingDays = isThisMonth ? daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1 : 0;
 
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*Budget harian dihitung ${remainingDays} hari tersisa bln ini</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
           <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 
@@ -2306,9 +2308,7 @@ textarea {
         const endDay = today.getDate();
         const startDay = Math.max(1, endDay - days + 1);
         for (let d = startDay; d <= endDay; d++) {
-          const dateStr = new Date(today.getFullYear(), today.getMonth(), d)
-            .toISOString()
-            .split("T")[0];
+          const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
           const total = state.transactions
             .filter((t) => t.date === dateStr && t.type === "expense")
             .reduce((s, t) => s + t.amount, 0);
@@ -2364,7 +2364,7 @@ textarea {
           badge = `<span class="badge badge-warn" style="margin-left: 8px; font-size: 9px;">Piutang</span>`;
           markBtn = `<button class="btn-icon" style="width:28px;height:28px;color:var(--success);border-color:var(--success)" onclick="markAsReceived('${t.id}')" title="Tandai Sudah Diterima">${ICONS.check_circle}</button>`;
         }
-        return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div class="tx-info"><div class="tx-note">${t.note || cat.name} ${badge}</div><div class="tx-cat">${cat.name}</div></div><div class="tx-amount" style="color: ${t.type === "income" ? "var(--success)" : "var(--fg)"}">${t.type === "income" ? "+" : "-"}${fmt(t.amount)}</div><div class="tx-actions"><button class="tx-edit" onclick="editTransaction('${t.id}')">${ICONS.edit}</button>${markBtn}<button class="tx-del" onclick="deleteTx('${t.id}')">${ICONS.trash}</button></div></div>`;
+        return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div class="tx-info"><div class="tx-note">${t.note || cat.name} ${badge}</div><div class="tx-cat">${cat.name}</div></div><div class="tx-amount" style="color: ${t.type === "income" ? "var(--success)" : "var(--fg)"}">${t.type === "income" ? "+" : "-"}${fmt(t.amount)}</div><div class="tx-actions"><button class="tx-edit" onclick="editTransaction('${t.id}')">${ICONS.edit}</button>${markBtn}<button class="tx-del" data-del-tx="${t.id}" title="Tahan 2 detik untuk hapus">${ICONS.trash}</button></div></div>`;
       }
 
       function renderGoals() {
@@ -2378,7 +2378,7 @@ textarea {
             const percent = Math.min(100, (g.current / g.target) * 100);
             const circ = 2 * Math.PI * 32;
             const offset = circ - (percent / 100) * circ;
-            return `<div class="card card-hover goal-card"><div class="goal-head"><div class="goal-ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="40" cy="40" r="32" fill="none" stroke="${g.current >= g.target ? "var(--success)" : "var(--lime)"}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg><div class="goal-ring-text">${percent.toFixed(0)}%</div></div><div><div class="goal-name">${g.name}</div><div class="goal-amount">${fmt(g.current)} / ${fmt(g.target)}</div></div></div><div class="goal-actions"><button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}', 50000)">+50rb</button><button class="btn btn-ghost btn-sm" onclick="deleteGoal('${g.id}')">${ICONS.trash}</button></div></div>`;
+            return `<div class="card card-hover goal-card"><div class="goal-head"><div class="goal-ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="40" cy="40" r="32" fill="none" stroke="${g.current >= g.target ? "var(--success)" : "var(--lime)"}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg><div class="goal-ring-text">${percent.toFixed(0)}%</div></div><div><div class="goal-name">${g.name}</div><div class="goal-amount">${fmt(g.current)} / ${fmt(g.target)}</div></div></div><div class="goal-actions"><button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}', 50000)">+50rb</button><button class="btn btn-ghost btn-sm" data-del-goal="${g.id}" title="Tahan 2 detik untuk hapus">${ICONS.trash}</button></div></div>`;
           })
           .join("");
       }
@@ -2572,7 +2572,7 @@ textarea {
         list.innerHTML = filteredCats
           .map(
             (c) =>
-              `<div class="card card-pad flex items-center gap-3"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="flex-1"><div class="font-semibold text-sm">${c.name}</div></div><button class="btn-icon" onclick="editCategory('${c.id}')">${ICONS.edit}</button><button class="btn-icon" onclick="deleteCategory('${c.id}')">${ICONS.trash}</button></div>`,
+              `<div class="card card-pad flex items-center gap-3"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="flex-1"><div class="font-semibold text-sm">${c.name}</div></div><button class="btn-icon" onclick="editCategory('${c.id}')">${ICONS.edit}</button><button class="btn-icon" data-del-cat="${c.id}" title="Tahan 2 detik untuk hapus">${ICONS.trash}</button></div>`,
           )
           .join("");
       }
@@ -2724,6 +2724,50 @@ textarea {
         showToast("Target dihapus", "success");
       };
 
+      // ===== HOLD-TO-DELETE =====
+      const HOLD_MS = 2000;
+      let hold = null;
+      function holdDeleteStart(btn) {
+        holdDeleteCancel();
+        const key = btn.dataset.delTx
+          ? "deleteTx"
+          : btn.dataset.delCat
+            ? "deleteCategory"
+            : "deleteGoal";
+        const id = btn.dataset.delTx || btn.dataset.delCat || btn.dataset.delGoal;
+        btn.classList.add("holding");
+        btn.style.animation = `hold-fill ${HOLD_MS}ms linear forwards`;
+        hold = {
+          btn,
+          timer: setTimeout(() => {
+            hold = null;
+            btn.classList.remove("holding");
+            btn.style.animation = "";
+            window[key](id);
+          }, HOLD_MS),
+        };
+      }
+      function holdDeleteCancel() {
+        if (!hold) return;
+        clearTimeout(hold.timer);
+        hold.btn.classList.remove("holding");
+        hold.btn.style.animation = "";
+        hold = null;
+      }
+      document.addEventListener("pointerdown", (e) => {
+        const btn = e.target.closest(
+          "[data-del-tx],[data-del-cat],[data-del-goal]",
+        );
+        if (!btn) return;
+        e.preventDefault();
+        holdDeleteStart(btn);
+      });
+      document.addEventListener("pointerup", holdDeleteCancel);
+      document.addEventListener("pointercancel", holdDeleteCancel);
+      document.addEventListener("pointermove", (e) => {
+        if (hold && !hold.btn.contains(e.target)) holdDeleteCancel();
+      });
+
       async function handleReset() {
         if (!confirm("Yakin reset SEMUA data di Firebase?")) return;
         document.getElementById("syncText").textContent = "Deleting...";
@@ -2779,9 +2823,8 @@ textarea {
         state.editingTxId = null;
         document.getElementById("txForm").reset();
         document.getElementById("modalTxTitle").textContent = "Catat Transaksi";
-        document.getElementById("txDate").value = new Date()
-          .toISOString()
-          .split("T")[0];
+        const now = new Date();
+        document.getElementById("txDate").value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
         setupTxModal();
         document.querySelector('#modalTx [data-type="expense"]').click();
         openModal("modalTx");

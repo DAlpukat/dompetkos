@@ -1687,10 +1687,10 @@ textarea {
             <label class="form-label">Nominal</label>
             <div class="input-wrap">
               <span class="input-prefix">Rp</span
-              ><input
-                type="number"
+              >              <input
+                type="text"
                 id="txAmount"
-                class="input-padded"
+                class="input-padded fmt-rupiah"
                 placeholder="0"
                 required
                 min="1"
@@ -1837,10 +1837,10 @@ textarea {
             <label class="form-label">Target Nominal</label>
             <div class="input-wrap">
               <span class="input-prefix">Rp</span
-              ><input
-                type="number"
+              >              <input
+                type="text"
                 id="goalTarget"
-                class="input-padded"
+                class="input-padded fmt-rupiah"
                 placeholder="2000000"
                 required
                 min="1000"
@@ -1852,10 +1852,10 @@ textarea {
             <label class="form-label">Sudah Terkumpul</label>
             <div class="input-wrap">
               <span class="input-prefix">Rp</span
-              ><input
-                type="number"
+              >              <input
+                type="text"
                 id="goalCurrent"
-                class="input-padded"
+                class="input-padded fmt-rupiah"
                 placeholder="0"
                 value="0"
                 min="0"
@@ -2485,7 +2485,7 @@ textarea {
         container.innerHTML = state.categories.filter(c => c.type === "expense").map(c => {
           const b = state.budgets[c.id] || { amount: 0, type: "monthly" };
           const isDaily = b.type === "daily";
-          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="number" class="input-padded budget-input" data-cat="${c.id}" value="${b.amount || 0}" min="0" step="1000" inputmode="numeric"></div><div class="budget-start-wrap" data-cat="${c.id}" style="${isDaily ? "" : "display:none"};margin-top:8px"><label class="form-label" style="margin-bottom:2px">Mulai dari (untuk budget harian)</label><input type="date" class="budget-start" value="${b.createdAt || todayStr}"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
+          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="text" class="input-padded budget-input fmt-rupiah" data-cat="${c.id}" value="${fmtRupiahInput(b.amount || 0)}" min="0" inputmode="numeric"></div><div class="budget-start-wrap" data-cat="${c.id}" style="${isDaily ? "" : "display:none"};margin-top:8px"><label class="form-label" style="margin-bottom:2px">Mulai dari (untuk budget harian)</label><input type="date" class="budget-start" value="${b.createdAt || todayStr}"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
         }).join("");
 
         container.querySelectorAll(".budget-input-row").forEach(row => {
@@ -2495,7 +2495,7 @@ textarea {
           const startWrap = row.querySelector(".budget-start-wrap");
 
           const updateHint = () => {
-            const amt = parseFloat(input.value) || 0;
+            const amt = numOf(input.value);
             const activeBtn = row.querySelector(".budget-type-btn.active");
             const activeType = activeBtn ? activeBtn.dataset.type : "monthly";
             if (startWrap)
@@ -2618,7 +2618,7 @@ textarea {
 
       async function handleSaveTx(e) {
         e.preventDefault();
-        const amount = parseFloat(document.getElementById("txAmount").value);
+        const amount = numOf(document.getElementById("txAmount").value);
         const note = document.getElementById("txNote").value;
         const date = document.getElementById("txDate").value;
         if (!amount) return showToast("Nominal harus lebih dari 0", "warning");
@@ -2650,7 +2650,7 @@ textarea {
           const input = row.querySelector(".budget-input");
           const typeBtn = row.querySelector(".budget-type-btn.active");
           const catId = input.dataset.cat;
-          const val = parseFloat(input.value) || 0;
+          const val = numOf(input.value);
           const type = typeBtn ? typeBtn.dataset.type : "monthly";
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -2693,9 +2693,8 @@ textarea {
       async function handleAddGoal(e) {
         e.preventDefault();
         const name = document.getElementById("goalName").value;
-        const target = parseFloat(document.getElementById("goalTarget").value);
-        const current =
-          parseFloat(document.getElementById("goalCurrent").value) || 0;
+        const target = numOf(document.getElementById("goalTarget").value);
+        const current = numOf(document.getElementById("goalCurrent").value);
         if (!name || target < 1000)
           return showToast("Isi nama dan minimal target Rp 1.000", "warning");
         await setDoc(doc(collection(db, "goals")), { name, target, current });
@@ -2720,7 +2719,7 @@ textarea {
         state.selectedCat = tx.category;
         state.selectedStatus = tx.status || "received";
         document.getElementById("modalTxTitle").textContent = "Edit Transaksi";
-        document.getElementById("txAmount").value = tx.amount;
+        document.getElementById("txAmount").value = fmtRupiahInput(tx.amount);
         document.getElementById("txNote").value = tx.note || "";
         document.getElementById("txDate").value = tx.date;
         setupTxModal();
@@ -2848,6 +2847,18 @@ textarea {
         if (num >= 1000) return "Rp " + (num / 1000).toFixed(0) + "rb";
         return "Rp " + num;
       }
+      function fmtRupiahInput(n) {
+        const digits = String(n).replace(/\D/g, "");
+        return digits ? Number(digits).toLocaleString("id-ID") : "";
+      }
+      function numOf(str) {
+        return parseFloat(String(str).replace(/\./g, "")) || 0;
+      }
+      document.addEventListener("input", (e) => {
+        const t = e.target;
+        if (!t.matches(".fmt-rupiah")) return;
+        t.value = fmtRupiahInput(t.value);
+      });
       let toastTimer;
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");

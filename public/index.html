@@ -2258,7 +2258,10 @@ textarea {
         const expense = state.transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
         const balance = income - expense;
         const totalBudget = state.categories.filter(c => c.type === "expense").reduce((s, c) => s + getMonthlyBudget(c.id), 0);
-        const remaining = balance - totalBudget;
+        const spentBudgeted = state.categories
+          .filter(c => c.type === "expense" && getMonthlyBudget(c.id) > 0)
+          .reduce((s, c) => s + state.transactions.filter(t => t.category === c.id).reduce((a, t) => a + t.amount, 0), 0);
+        const remaining = balance - totalBudget + spentBudgeted;
 
         grid.innerHTML = state.categories.filter(c => c.type === "expense").map(cat => {
           const spent = state.transactions.filter(t => t.category === cat.id).reduce((s, t) => s + t.amount, 0);

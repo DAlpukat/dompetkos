@@ -554,7 +554,7 @@ textarea {
         transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
       }
-      .progress-fill::after {
+      .progress-bar::after {
         content: "";
         position: absolute;
         inset: 0;
@@ -564,7 +564,7 @@ textarea {
           rgba(255, 255, 255, 0.25),
           transparent
         );
-        animation: shimmer 2s infinite;
+        animation: shimmer 2.4s ease-in-out infinite alternate;
       }
       @keyframes shimmer {
         0% {

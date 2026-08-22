@@ -23,6 +23,24 @@ Sahabat keuangan anak kos yang merantau. Aplikasi budgeting **offline-first** de
 - [Firebase Firestore](https://firebase.google.com/products/firestore) — database realtime
 - [Firebase Hosting](https://firebase.google.com/products/hosting) — hosting & deploy
 
+## 🤖 Telegram Bot (opsional)
+
+Catat transaksi langsung dari Telegram — data masuk Firestore yang sama jadi langsung muncul di web. Dashboard di Telegram cuma total saldo bulan ini.
+
+```bash
+# 1. bikin bot di @BotFather, copy token
+# 2. jalankan (Node 18+, tanpa npm install):
+set TELEGRAM_BOT_TOKEN=123456:ABC   # PowerShell  |  Bash: TELEGRAM_BOT_TOKEN=123456:ABC node telegram-bot.js
+node telegram-bot.js
+# cek parser tanpa butuh token:
+node telegram-bot.js --check
+```
+
+Di chat bot: `/input` → pilih tipe → kategori (pilih yang ada / `➕ Kategori baru`) → nominal → deskripsi → tanggal. `/saldo` buat cek saldo, `/batal` buat batalkan.
+
+Nominal fleksibel: `15000` · `15.000` · `15,000` · `15rb` · `2jt` · `1,5jt` (titik/koma bebas).
+Tanggal fleksibel: `-` (= hari ini) · `kemarin` · `20/8` · `2026-08-20`; kosong = hari ini.
+
 ## 📦 Struktur
 
 ```
@@ -30,6 +48,7 @@ public/               # Web app (di-deploy ke Firebase Hosting)
   index.html          # Semua kode app (HTML, CSS, JS)
   manifest.json       # PWA manifest
   dompet.png/.svg     # Icon
+telegram-bot.js       # Bot Telegram (Node 18+, zero deps, long-polling)
 ```
 
 ## ⚙️ Setup Lokal

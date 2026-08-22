@@ -1,0 +1,6 @@
+{
+  "name": "dompetkos-bot",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node telegram-bot.js" }
+}

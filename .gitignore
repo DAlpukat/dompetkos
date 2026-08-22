@@ -1,5 +1,7 @@
 node_modules/
 .vercel/
+.wrangler/
+.dev.vars
 .env
 .DS_Store
 
@@ -9,3 +11,4 @@ node_modules/
 firebase.json
 firestore.rules
 firebase-debug.log
+firestore-debug.log

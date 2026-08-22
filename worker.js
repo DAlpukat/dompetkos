@@ -94,17 +94,22 @@ export default {
     const saldoBulanIni = async ()=>{
       const now=new Date(), first=isoOf(new Date(now.getFullYear(),now.getMonth(),1));
       const txs=await fsList("transactions");
-      let masuk=0, keluar=0;
+      let masuk=0, keluar=0, piutang=0;
       for(const t of txs){
         if(String(t.date)<first) continue;
         if(t.type==="expense") keluar+=Number(t.amount)||0;
+        else if(t.status==="pending") piutang+=Number(t.amount)||0;
         else if((t.status||"received")==="received") masuk+=Number(t.amount)||0;
       }
-      return {masuk, keluar};
+      return {masuk, keluar, piutang};
     };
     const saldoText = async ()=>{
-      const {masuk,keluar}=await saldoBulanIni();
-      return `💰 <b>Saldo bulan ini</b>\n\nMasuk: ${fmtRp(masuk)}\nKeluar: ${fmtRp(keluar)}\n\nSaldo: <b>${fmtRp(masuk-keluar)}</b>`;
+      const {masuk,keluar,piutang}=await saldoBulanIni();
+      let out=`💰 <b>Saldo bulan ini</b>\n\nMasuk: ${fmtRp(masuk)}\nKeluar: ${fmtRp(keluar)}`;
+      if(piutang) out+=`\nPiutang: ${fmtRp(piutang)}`;
+      out+=`\n\nSaldo kas: <b>${fmtRp(masuk-keluar)}</b>`;
+      if(piutang) out+=`\nSaldo + piutang: <b>${fmtRp(masuk-keluar+piutang)}</b>`;
+      return out;
     };
 
     const askType = async (chatId)=>{

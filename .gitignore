@@ -18,3 +18,7 @@ firebase.json
 firestore.rules
 firebase-debug.log
 firestore-debug.log
+
+# Private cheatsheet (jangan ke-push)
+PRIVATE.md
+CATATAN-PRIVATE.md

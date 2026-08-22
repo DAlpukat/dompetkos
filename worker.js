@@ -30,7 +30,7 @@ export default {
     }
     function parseDate(raw){
       const s=String(raw).trim().toLowerCase();
-      if(!s||s==="-"||s==="skip") return isoOf(new Date());
+      if(!s||s==="-"||s==="skip"||s==="hari ini"||s.startsWith("hari ini")) return isoOf(new Date());
       if(s.startsWith("kemarin")) return isoOf(new Date(Date.now()-864e5));
       if(s.startsWith("besok")) return isoOf(new Date(Date.now()+864e5));
       let y,mo,d,hadYear=true, m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
@@ -167,7 +167,7 @@ export default {
         const cmd=text.split(/\s+/)[0].toLowerCase().split("@")[0];
         if(cmd==="/start"||cmd==="/help"){
           await delSession(String(chatId));
-          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n/input — catat transaksi\n/saldo — cek saldo\n/batal — batalkan\n\nNominal: 15000, 15rb, 2jt (titik/koma bebas)\nTanggal: kirim - untuk hari ini, atau kemarin, 20/8, 2026-08-20\n\nBot & web pakai data yang sama.");
+          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n/input — catat transaksi\n/saldo — cek saldo\n/batal — batalkan\n\nNominal: 15000, 15rb, 2jt (titik/koma bebas)\nTanggal: Hari ini, kemarin, 20/8, 2026-08-20\n\nBot & web pakai data yang sama.");
           return;
         }
         if(cmd==="/saldo"){ try{ await send(chatId, await saldoText()); }catch(e){ await send(chatId,"Gagal ambil saldo: "+esc(e.message)); } return; }
@@ -206,12 +206,12 @@ export default {
           if(sess.catId) data.catId=sess.catId;
           if(sess.newCatName) data.newCatName=sess.newCatName;
           await setSession(String(chatId), data);
-          await send(chatId,"Tanggalnya kapan? Kirim - untuk hari ini.\nContoh: kemarin, 20/8, 2026-08-20");
+          await send(chatId,"Tanggalnya kapan? Kirim Hari ini.\nContoh: kemarin, 20/8, 2026-08-20");
           return;
         }
         case "date":{
           const date=parseDate(text);
-          if(!date){ await send(chatId,"Tanggalnya nggak kebaca. Kirim - untuk hari ini. Contoh: kemarin, 20/8, 2026-08-20"); return; }
+          if(!date){ await send(chatId,"Tanggalnya nggak kebaca. Kirim Hari ini. Contoh: kemarin, 20/8, 2026-08-20"); return; }
           let catId=sess.catId, catName="";
           if(catId){
             try{

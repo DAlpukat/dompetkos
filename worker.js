@@ -143,7 +143,7 @@ export default {
         if(data.startsWith("cat:")){
           const catId=data.slice(4);
           await setSession(String(chatId),{step:"amount", type:sess.type, catId});
-          await edit(chatId,mid,"Nominalnya berapa?\nContoh: 15000 · 15.000 · 15rb · 2jt");
+          await edit(chatId,mid,"Nominalnya berapa?\nContoh: 15000, 15rb, 2jt");
           return;
         }
         if(data.startsWith("type:")){
@@ -167,7 +167,7 @@ export default {
         const cmd=text.split(/\s+/)[0].toLowerCase().split("@")[0];
         if(cmd==="/start"||cmd==="/help"){
           await delSession(String(chatId));
-          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n/input — catat transaksi\n/saldo — cek saldo bulan ini\n/batal — batalkan input\n\nNominal fleksibel: <code>15000</code> · <code>15.000</code> · <code>15rb</code> · <code>2jt</code> · <code>1,5jt</code>\nTanggal fleksibel: <code>-</code> (= hari ini) · <code>kemarin</code> · <code>20/8</code> · <code>2026-08-20</code>\n\nBot & web baca tulis Firestore yang sama, data langsung sinkron.");
+          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n/input — catat transaksi\n/saldo — cek saldo\n/batal — batalkan\n\nNominal: 15000, 15rb, 2jt (titik/koma bebas)\nTanggal: kirim - untuk hari ini, atau kemarin, 20/8, 2026-08-20\n\nBot & web pakai data yang sama.");
           return;
         }
         if(cmd==="/saldo"){ try{ await send(chatId, await saldoText()); }catch(e){ await send(chatId,"Gagal ambil saldo: "+esc(e.message)); } return; }
@@ -187,17 +187,17 @@ export default {
           const name=text.slice(0,40).trim();
           if(!name){ await send(chatId,"Nama kategorinya?"); return; }
           await setSession(String(chatId),{step:"amount", type:sess.type, newCatName:name});
-          await send(chatId,`Kategori "${esc(name)}" ✅\n\nNominalnya berapa?\nContoh: 15000 · 15.000 · 15rb · 2jt`);
+          await send(chatId,`Kategori "${esc(name)}" ✅\n\nNominalnya berapa?\nContoh: 15000, 15rb, 2jt`);
           return;
         }
         case "amount":{
           const amount=parseAmount(text);
-          if(!amount){ await send(chatId,"Nominalnya belum kebaca 🤔\nContoh yang valid: 15000 · 15.000 · 15rb · 2jt"); return; }
+          if(!amount){ await send(chatId,"Nominalnya belum kebaca. Contoh: 15000, 15rb, 2jt"); return; }
           const data={step:"note", type:sess.type, amount:String(amount)};
           if(sess.catId) data.catId=sess.catId;
           if(sess.newCatName) data.newCatName=sess.newCatName;
           await setSession(String(chatId), data);
-          await send(chatId,`${fmtRp(amount)} ✅\n\nDeskripsinya? (kirim <code>-</code> buat lewati)`);
+          await send(chatId,`${fmtRp(amount)} ✅\n\nDeskripsinya apa? Kirim - untuk lewati`);
           return;
         }
         case "note":{
@@ -206,12 +206,12 @@ export default {
           if(sess.catId) data.catId=sess.catId;
           if(sess.newCatName) data.newCatName=sess.newCatName;
           await setSession(String(chatId), data);
-          await send(chatId,"Tanggalnya?\n<code>-</code> = hari ini · contoh lain: <code>kemarin</code> · <code>20/8</code> · <code>2026-08-20</code>");
+          await send(chatId,"Tanggalnya kapan? Kirim - untuk hari ini.\nContoh: kemarin, 20/8, 2026-08-20");
           return;
         }
         case "date":{
           const date=parseDate(text);
-          if(!date){ await send(chatId,"Tanggalku nggak ngerti 😅\nCoba: <code>-</code> · <code>kemarin</code> · <code>20/8</code> · <code>2026-08-20</code>"); return; }
+          if(!date){ await send(chatId,"Tanggalnya nggak kebaca. Kirim - untuk hari ini. Contoh: kemarin, 20/8, 2026-08-20"); return; }
           let catId=sess.catId, catName="";
           if(catId){
             try{

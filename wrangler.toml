@@ -1,0 +1,6 @@
+name = "dompetkos-bot"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# env secrets: set via `npx wrangler secret put TELEGRAM_BOT_TOKEN`
+# optional: FIREBASE_PROJECT_ID (default dompetkos-b5877)

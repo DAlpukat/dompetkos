@@ -25,18 +25,29 @@ Sahabat keuangan anak kos yang merantau. Aplikasi budgeting **offline-first** de
 
 ## 🤖 Telegram Bot (opsional)
 
-Catat transaksi langsung dari Telegram — data masuk Firestore yang sama jadi langsung muncul di web. Dashboard di Telegram cuma total saldo bulan ini.
+Catat transaksi dari Telegram — data masuk Firestore yang sama jadi langsung muncul di web. Dashboard di Telegram cuma total saldo bulan ini.
 
+**Opsi A — Cloudflare Workers (24/7, free tanpa kartu, stateless):**
 ```bash
 # 1. bikin bot di @BotFather, copy token
-# 2. jalankan (Node 18+, tanpa npm install):
-set TELEGRAM_BOT_TOKEN=123456:ABC   # PowerShell  |  Bash: TELEGRAM_BOT_TOKEN=123456:ABC node telegram-bot.js
-node telegram-bot.js
-# cek parser tanpa butuh token:
-node telegram-bot.js --check
+# 2. deploy worker:
+npm i -g wrangler
+wrangler login
+wrangler secret put TELEGRAM_BOT_TOKEN   # paste token
+# opsional: wrangler secret put FIREBASE_PROJECT_ID  # default dompetkos-b5877
+wrangler deploy
+# 3. set webhook (ganti URL hasil deploy):
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://dompetkos-bot.<kamu>.workers.dev"
 ```
 
-Di chat bot: `/input` → pilih tipe → kategori (pilih yang ada / `➕ Kategori baru`) → nominal → deskripsi → tanggal. `/saldo` buat cek saldo, `/batal` buat batalkan.
+**Opsi B — Lokal polling (tanpa hosting, Node 18+, zero deps):**
+```bash
+set TELEGRAM_BOT_TOKEN=123456:ABC   # PowerShell | Bash: TELEGRAM_BOT_TOKEN=... node telegram-bot.js
+node telegram-bot.js
+node telegram-bot.js --check  # cek parser tanpa token
+```
+
+Di chat: `/input` → tipe → kategori (pilih ada / `➕ Kategori baru`) → nominal → deskripsi → tanggal. `/saldo` / `/batal`.
 
 Nominal fleksibel: `15000` · `15.000` · `15,000` · `15rb` · `2jt` · `1,5jt` (titik/koma bebas).
 Tanggal fleksibel: `-` (= hari ini) · `kemarin` · `20/8` · `2026-08-20`; kosong = hari ini.
@@ -48,7 +59,8 @@ public/               # Web app (di-deploy ke Firebase Hosting)
   index.html          # Semua kode app (HTML, CSS, JS)
   manifest.json       # PWA manifest
   dompet.png/.svg     # Icon
-telegram-bot.js       # Bot Telegram (Node 18+, zero deps, long-polling)
+telegram-bot.js       # Bot polling lokal (Node zero-deps)
+worker.js + wrangler.toml  # Bot webhook Cloudflare Workers (session di Firestore)
 ```
 
 ## ⚙️ Setup Lokal

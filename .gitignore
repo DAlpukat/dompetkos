@@ -4,6 +4,12 @@ node_modules/
 .dev.vars
 .env
 .DS_Store
+.cursorignore
+.aiignore
+
+# Bot polling lokal (tidak dipakai hosting Cloudflare)
+package.json
+telegram-bot.js
 
 # Firebase
 .firebase/

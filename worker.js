@@ -48,7 +48,7 @@ export default {
       return out;
     }
 
-    const COLORS=["#fb923c","#c4f542","#22d3ee","#c084fc","#f472b6","#fbbf24","#f87171","#94a3b8"];
+    const COLORS=["#cb6441","#b2572f","#9c87f6","#f4997b","#ded7c2","#dad2ef","#525044","#b4b1a3"];
 
     const tg = async (method, body) => {
       const r=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());

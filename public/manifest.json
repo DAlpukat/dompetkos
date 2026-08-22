@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0b0f",
-  "theme_color": "#0a0b0f",
+  "background_color": "#faf8f1",
+  "theme_color": "#cb6441",
   "icons": [
     {
       "src": "/dompet.svg",

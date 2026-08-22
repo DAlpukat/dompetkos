@@ -50,7 +50,11 @@ export default {
 
     const COLORS=["#fb923c","#c4f542","#22d3ee","#c084fc","#f472b6","#fbbf24","#f87171","#94a3b8"];
 
-    const tg = (method, body) => fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+    const tg = async (method, body) => {
+      const r=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+      if(!r.ok) console.error(`tg ${method} fail:`, JSON.stringify(r));
+      return r;
+    };
     const send = (chatId, text, reply_markup) => tg("sendMessage",{chat_id:chatId, text, parse_mode:"HTML", ...(reply_markup&&{reply_markup})});
     const edit = (chatId, mid, text, reply_markup) => tg("editMessageText",{chat_id:chatId, message_id:mid, text, parse_mode:"HTML", ...(reply_markup&&{reply_markup})});
 
@@ -230,10 +234,12 @@ export default {
     }
 
     if(request.method==="POST"){
+      if(!BOT_TOKEN) console.error("BOT_TOKEN kosong! set wrangler secret put TELEGRAM_BOT_TOKEN");
       try{
         const update=await request.json();
-        ctx.waitUntil(handleUpdate(update).catch(e=>console.error(e)));
-      }catch(e){ console.error(e); }
+        console.log("update:", JSON.stringify(update).slice(0,800));
+        ctx.waitUntil(handleUpdate(update).catch(e=>console.error("handleUpdate error:", e, e.stack)));
+      }catch(e){ console.error("parse error:", e); }
       return new Response("ok",{status:200});
     }
     return new Response("DompetKos Worker OK — set webhook ke "+request.url, {headers:{"content-type":"text/plain"}});

@@ -1623,8 +1623,9 @@
               <div
                 class="stat-icon"
                 style="
-                  background: rgba(74, 222, 128, 0.15);
+                  background: rgba(26, 122, 74, 0.08);
                   color: var(--success);
+                  border: 1px solid rgba(26, 122, 74, 0.12);
                 "
               >
                 <span data-icon="arrow_down_left"></span>
@@ -1642,8 +1643,9 @@
               <div
                 class="stat-icon"
                 style="
-                  background: rgba(248, 113, 113, 0.15);
+                  background: rgba(192, 54, 43, 0.08);
                   color: var(--danger);
+                  border: 1px solid rgba(192, 54, 43, 0.12);
                 "
               >
                 <span data-icon="arrow_up_right"></span>
@@ -1660,7 +1662,11 @@
             <div class="stat-box">
               <div
                 class="stat-icon"
-                style="background: rgba(251, 191, 36, 0.15); color: var(--yellow)"
+                style="
+                  background: rgba(181, 122, 47, 0.08);
+                  color: var(--yellow);
+                  border: 1px solid rgba(181, 122, 47, 0.12);
+                "
               >
                 <span data-icon="clock"></span>
               </div>
@@ -2142,9 +2148,9 @@
           id="btnReset"
           class="btn w-full"
           style="
-            background: rgba(248, 113, 113, 0.15);
+            background: rgba(192, 54, 43, 0.06);
             color: var(--danger);
-            border: 1px solid var(--danger);
+            border: 1px solid rgba(192, 54, 43, 0.18);
           "
         >
           RESET SEMUA DATA FIREBASE
@@ -2313,10 +2319,10 @@
         "#3d3826",
         "#b25630",
         "#a78bfa",
-        "#34d399",
-        "#60a5fa",
-        "#fbbf24",
-        "#94a3b8",
+        "#8a9a94",
+        "#c9a86a",
+        "#7a6a58",
+        "#b8a99a",
       ];
 
       let state = {
@@ -2624,7 +2630,7 @@
         const cat = state.categories.find((c) => c.id === t.category) || {
           name: "Lainnya",
           icon: "ellipsis",
-          color: "#888",
+          color: "#85837d",
         };
         let badge = "";
         let markBtn = "";
@@ -2646,7 +2652,7 @@
             const percent = Math.min(100, (g.current / g.target) * 100);
             const circ = 2 * Math.PI * 32;
             const offset = circ - (percent / 100) * circ;
-            return `<div class="card card-hover goal-card"><div class="goal-head"><div class="goal-ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/><circle cx="40" cy="40" r="32" fill="none" stroke="${g.current >= g.target ? "var(--success)" : "var(--lime)"}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg><div class="goal-ring-text">${percent.toFixed(0)}%</div></div><div><div class="goal-name">${g.name}</div><div class="goal-amount">${fmt(g.current)} / ${fmt(g.target)}</div></div></div><div class="goal-actions"><button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}', 50000)">+50rb</button><button class="btn btn-ghost btn-sm" data-del-goal="${g.id}" title="Tahan 2 detik untuk hapus">${ICONS.trash}</button></div></div>`;
+            return `<div class="card card-hover goal-card"><div class="goal-head"><div class="goal-ring"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" stroke-width="5" opacity="0.9"/><circle cx="40" cy="40" r="32" fill="none" stroke="${g.current >= g.target ? "var(--success)" : "var(--primary)"}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/></svg><div class="goal-ring-text">${percent.toFixed(0)}%</div></div><div><div class="goal-name">${g.name}</div><div class="goal-amount">${fmt(g.current)} / ${fmt(g.target)}</div></div></div><div class="goal-actions"><button class="btn btn-ghost btn-sm" onclick="addGoalProgress('${g.id}', 50000)">+50rb</button><button class="btn btn-ghost btn-sm" data-del-goal="${g.id}" title="Tahan 2 detik untuk hapus">${ICONS.trash}</button></div></div>`;
           })
           .join("");
       }

@@ -86,28 +86,34 @@
         :root {
           --background: #262626;
           --foreground: #c3c1ba;
-          --card: #2a2a2a;
+          --card: #2e2e2c;
           --card-foreground: #c3c1ba;
           --primary: #d87757;
           --primary-foreground: #1a1a1a;
           --secondary: #3a3a32;
           --secondary-foreground: #c3c1ba;
-          --muted: #1b1b1b;
+          --muted: #383835;
           --muted-foreground: #b7b5a6;
           --accent: #3a2a24;
+          --accent-foreground: #f4997b;
+          --destructive: #f14444;
           --border: #3e3e38;
           --input: #3e3e38;
           --ring: #5ea8f5;
           --sidebar: #1f1f1f;
           --bg: var(--background);
           --bg2: #1f1f1f;
-          --card2: #2a2a2a;
+          --card2: #2e2e2c;
           --border2: #3e3e38;
           --fg: var(--foreground);
           --muted2: #7a7870;
           --accent-soft: rgba(216, 119, 87, 0.12);
+          --card-accent: var(--primary);
           --cyan: var(--ring);
           --lime: var(--primary);
+          --yellow: #d9a441;
+          --success: #4ade80;
+          --danger: #f14444;
         }
       }
       html {
@@ -245,7 +251,8 @@
         font-weight: 500;
       }
       .muted {
-        color: var(--muted);
+        color: var(--muted-foreground);
+        font-family: var(--font-ui);
       }
       .muted2 {
         color: var(--muted2);
@@ -376,6 +383,21 @@
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
+      }
+      @media (prefers-color-scheme: dark) {
+        .header {
+          background: rgba(31, 31, 31, 0.85);
+        }
+        .card-hover:hover {
+          border-color: #4a4a44;
+        }
+        .cat-chip:hover {
+          border-color: #4a4a44;
+          background: var(--background);
+        }
+        .badge-warn {
+          color: #d9a441;
+        }
       }
       .header-inner {
         display: flex;
@@ -2356,10 +2378,37 @@
       }
 
       // ===== LOAD & INIT DATA =====
+      // ponytail: migrasi warna kategori lama (neon) ke palet Claude saat render,
+      // hapus peta ini kalau semua user sudah punya kategori warna baru
+      const COLOR_MIGRATION = {
+        "#fb923c": "#cb6441",
+        "#c4f542": "#b2572f",
+        "#22d3ee": "#9c87f6",
+        "#c084fc": "#9c87f6",
+        "#f472b6": "#d87757",
+        "#fbbf24": "#c9a86a",
+        "#f87171": "#b25630",
+        "#94a3b8": "#b4b1a3",
+        "#4ade80": "#1a7a4a",
+        "#60a5fa": "#dad2ef",
+        "#a78bfa": "#9c87f6",
+        "#34d399": "#1a7a4a",
+        "#fb7185": "#d87757",
+      };
+      function migrateCatColor(color) {
+        return COLOR_MIGRATION[String(color).toLowerCase()] || color;
+      }
+      async function loadCategories() {
+        state.categories = (await fetchCollection("categories")).map((c) => ({
+          ...c,
+          color: migrateCatColor(c.color),
+        }));
+      }
+
       async function loadData() {
         document.getElementById("syncText").textContent = "Loading...";
 
-        state.categories = await fetchCollection("categories");
+        await loadCategories();
         state.budgets = {};
         const budSnap = await fetchCollection("budgets");
         budSnap.forEach((b) => {
@@ -2936,7 +2985,7 @@
           type: state.activeMgrType,
         };
         await setDoc(doc(db, "categories", id), catData);
-        state.categories = await fetchCollection("categories");
+        await loadCategories();
         showToast("Kategori disimpan!", "success");
         setupCategoryModal();
         renderAll();
@@ -2985,7 +3034,7 @@
       };
       window.deleteCategory = async (id) => {
         await deleteDoc(doc(db, "categories", id));
-        state.categories = await fetchCollection("categories");
+        await loadCategories();
         setupCategoryModal();
         renderAll();
         showToast("Kategori dihapus", "success");

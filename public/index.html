@@ -3003,9 +3003,20 @@
       }
 
       // ===== GLOBAL FUNCTIONS =====
+      // ponytail: optimistic delete — UI update dulu, Firestore di belakang;
+      // kalau delete gagal, state dikembalikan dari server
       window.deleteTx = async (id) => {
-        await deleteDoc(doc(db, "transactions", id));
+        const backup = state.transactions;
+        state.transactions = backup.filter((t) => t.id !== id);
+        renderAll();
         showToast("Transaksi dihapus", "success");
+        try {
+          await deleteDoc(doc(db, "transactions", id));
+        } catch {
+          state.transactions = backup;
+          renderAll();
+          showToast("Gagal menghapus, coba lagi", "danger");
+        }
       };
       window.markAsReceived = async (id) => {
         await setDoc(doc(db, "transactions", id), { status: "received" }, { merge: true });
@@ -3032,11 +3043,18 @@
         openModal("modalTx");
       };
       window.deleteCategory = async (id) => {
-        await deleteDoc(doc(db, "categories", id));
-        await loadCategories();
-        setupCategoryModal();
+        const backup = state.categories;
+        state.categories = backup.filter((c) => c.id !== id);
         renderAll();
+        renderCategoryList();
         showToast("Kategori dihapus", "success");
+        try {
+          await deleteDoc(doc(db, "categories", id));
+        } catch {
+          await loadCategories();
+          renderAll();
+          showToast("Gagal menghapus, coba lagi", "danger");
+        }
       };
       window.editCategory = (id) => {
         const c = state.categories.find((c) => c.id === id);
@@ -3069,8 +3087,17 @@
         );
       };
       window.deleteGoal = async (id) => {
-        await deleteDoc(doc(db, "goals", id));
+        const backup = state.goals;
+        state.goals = backup.filter((g) => g.id !== id);
+        renderGoals();
         showToast("Target dihapus", "success");
+        try {
+          await deleteDoc(doc(db, "goals", id));
+        } catch {
+          state.goals = backup;
+          renderGoals();
+          showToast("Gagal menghapus, coba lagi", "danger");
+        }
       };
 
       // ===== HOLD-TO-DELETE =====

@@ -2552,6 +2552,79 @@
         return b.amount || 0;
       }
 
+      // ===== HEMAT BUDGET HARIAN =====
+      // ponytail: tanggal mulai efektif budget harian di bulan y,m —
+      // kalau budget dibuat bulan sebelumnya, otomatis dianggap mulai tgl 1
+      function budgetActiveSince(b, y, m) {
+        const [cy, cm] = String(b.createdAt || "").split("-").map(Number);
+        const first = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+        if (!cy) return first;
+        if (cy > y || (cy === y && cm - 1 > m)) return null;
+        if (cy === y && cm - 1 === m) return b.createdAt;
+        return first;
+      }
+
+      function dailyBudgetInfo(dateStr) {
+        let total = 0;
+        const catIds = [];
+        const [y, m] = dateStr.split("-").map(Number);
+        for (const c of state.categories) {
+          if (c.type !== "expense") continue;
+          const b = state.budgets[c.id];
+          if (!b || b.type !== "daily" || !(Number(b.amount) > 0)) continue;
+          const since = budgetActiveSince(b, y, m - 1);
+          if (!since || dateStr < since) continue;
+          total += Number(b.amount);
+          catIds.push(c.id);
+        }
+        return { total, catIds };
+      }
+
+      function daySaving(dateStr) {
+        const { total, catIds } = dailyBudgetInfo(dateStr);
+        if (!total) return null;
+        const spent = state.transactions
+          .filter(
+            (t) =>
+              t.date === dateStr &&
+              t.type === "expense" &&
+              catIds.includes(t.category),
+          )
+          .reduce((s, t) => s + t.amount, 0);
+        return total - spent;
+      }
+
+      function catSavedUntilYesterday(catId) {
+        const b = state.budgets[catId];
+        if (!b || b.type !== "daily" || !(Number(b.amount) > 0)) return null;
+        const now = new Date();
+        const start = budgetActiveSince(
+          b,
+          now.getFullYear(),
+          now.getMonth(),
+        );
+        if (!start) return null;
+        const isoOf = (d) =>
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const yest = new Date(now);
+        yest.setDate(now.getDate() - 1);
+        const end = isoOf(yest);
+        if (start > end) return 0;
+        const spentByDate = {};
+        state.transactions.forEach((t) => {
+          if (t.category === catId && t.type === "expense")
+            spentByDate[t.date] = (spentByDate[t.date] || 0) + t.amount;
+        });
+        let saved = 0;
+        for (
+          let d = new Date(start + "T00:00:00");
+          isoOf(d) <= end;
+          d.setDate(d.getDate() + 1)
+        )
+          saved += Number(b.amount) - (spentByDate[isoOf(d)] || 0);
+        return saved;
+      }
+
       function renderBudget() {
         const grid = document.getElementById("budgetGrid");
         const income = state.transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
@@ -2573,7 +2646,12 @@
               ? `${fmt(budget.amount)}/hari (${fmtShort(monthlyLimit)} bln ini)`
               : `${fmt(budget.amount)}/bln`
             : "Belum diatur";
-          return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">${limitText}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(monthlyLimit - spent)} sisa</span></div></div>`;
+          const saved = catSavedUntilYesterday(cat.id);
+          const savedLine =
+            saved == null
+              ? ""
+              : `<div class="budget-foot" style="${saved > 0 ? "color: var(--success)" : saved < 0 ? "color: var(--danger)" : ""}"><span>Hemat s/d kemarin</span><span class="font-semibold">${saved > 0 ? "+" : ""}${fmt(saved)}</span></div>`;
+          return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">${limitText}</div></div></div></div><div class="progress-bar"><div class="progress-fill" style="width:${percent}%; background:${cat.color}"></div></div><div class="budget-foot"><span class="muted">${fmt(spent)} terpakai</span><span class="font-semibold">${fmt(monthlyLimit - spent)} sisa</span></div>${savedLine}</div>`;
         }).join("");
 
         const today = new Date();
@@ -2665,11 +2743,20 @@
           if (!grouped[t.date]) grouped[t.date] = [];
           grouped[t.date].push(t);
         });
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${now.getDate() < 10 ? "0" + now.getDate() : now.getDate()}`;
         list.innerHTML = Object.keys(grouped)
           .sort((a, b) => new Date(b) - new Date(a))
           .map((date) => {
             const dayTxs = grouped[date];
-            return `<div style="margin-bottom:8px"><div class="tx-date"><span class="tx-date-label">${new Date(date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short" })}</span></div>${dayTxs.map((t) => renderTxItem(t)).join("")}</div>`;
+            const save = date < todayStr ? daySaving(date) : null;
+            const saveHtml =
+              save == null || save === 0
+                ? ""
+                : save > 0
+                  ? `<span class="tx-date-label" style="color: var(--success)">Hemat ${fmt(save)}</span>`
+                  : `<span class="tx-date-label" style="color: var(--danger)">Boros ${fmt(-save)}</span>`;
+            return `<div style="margin-bottom:8px"><div class="tx-date"><span class="tx-date-label">${new Date(date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short" })}</span>${saveHtml}</div>${dayTxs.map((t) => renderTxItem(t)).join("")}</div>`;
           })
           .join("");
       }

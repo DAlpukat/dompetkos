@@ -15,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Lato:wght@400;500;700&family=Lora:wght@400;500&family=Poppins:wght@600;700&display=swap"
       rel="stylesheet"
     />
-    <title>DompetKos — Budgeting Anak Rantau</title>
+    <title>DompetKos</title>
     <style>
       /* ===== RESET & BASE ===== */
       *,
@@ -1614,7 +1614,6 @@
           <div class="logo-icon"><span data-icon="wallet"></span></div>
           <div>
             <div class="logo-text">DompetKos</div>
-            <div class="logo-sub">Anak Rantau (Firebase)</div>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -3070,16 +3069,32 @@
               ? state.selectedStatus
               : "received",
         };
-        if (state.editingTxId)
-          await setDoc(doc(db, "transactions", state.editingTxId), txData, {
-            merge: true,
-          });
-        else {
+        // ponytail: optimistic — tutup popup langsung, Firestore di belakang
+        const isEdit = !!state.editingTxId;
+        const backup = [...state.transactions];
+        let docRef = null;
+        if (isEdit) {
+          const idx = state.transactions.findIndex((t) => t.id === state.editingTxId);
+          if (idx !== -1) state.transactions[idx] = { ...state.transactions[idx], ...txData };
+        } else {
+          docRef = doc(collection(db, "transactions"));
           txData.createdAt = Date.now();
-          await setDoc(doc(collection(db, "transactions")), txData);
+          state.transactions.push({ id: docRef.id, ...txData });
         }
-        showToast("Transaksi tersimpan!", "success");
+        const editingId = state.editingTxId;
+        state.editingTxId = null;
         document.getElementById("modalTx").classList.remove("active");
+        renderAll();
+        showToast(isEdit ? "Transaksi diperbarui!" : "Transaksi tersimpan!", "success");
+        try {
+          if (isEdit) await setDoc(doc(db, "transactions", editingId), txData, { merge: true });
+          else await setDoc(docRef, txData);
+        } catch (err) {
+          console.error(err);
+          state.transactions = backup;
+          renderAll();
+          showToast("Gagal menyimpan, coba lagi", "danger");
+        }
       }
 
       async function handleSaveBudget(e) {

@@ -1636,7 +1636,7 @@
         <div class="hero">
           <div class="hero-label">
             <span class="sync-dot" style="background: var(--lime)"></span> Saldo
-            bulan ini
+            dompet
           </div>
           <div class="hero-balance" id="saldoDisplay">Rp 0</div>
           <div class="hero-stats">
@@ -2194,10 +2194,9 @@
         setDoc,
         deleteDoc,
         onSnapshot,
-        query,
-        where,
         enableIndexedDbPersistence,
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
       // ===== FIREBASE CONFIG =====
       const firebaseConfig = {
@@ -2212,6 +2211,7 @@
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      const auth = getAuth(app);
 
       enableIndexedDbPersistence(db).catch((err) => {
         if (err.code !== "failed-precondition" && err.code !== "unimplemented") {
@@ -2414,25 +2414,32 @@
           state.budgets[b.id] = b;
         });
 
-        const today = new Date();
-        const firstDay = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-        const qTx = query(
+        // lifetime: muat semua transaksi — angka bulanan difilter via monthTx()
+        onSnapshot(
           collection(db, "transactions"),
-          where("date", ">=", firstDay),
+          (snap) => {
+            state.transactions = snap.docs.map((d) => ({
+              id: d.id,
+              ...d.data(),
+            }));
+            renderAll();
+            document.getElementById("syncText").textContent = "Synced";
+          },
+          (err) => {
+            console.error("transactions:", err);
+            document.getElementById("syncText").textContent =
+              "Akses ditolak — cek rules/auth";
+          },
         );
-        onSnapshot(qTx, (snap) => {
-          state.transactions = snap.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-          }));
-          renderAll();
-          document.getElementById("syncText").textContent = "Synced";
-        });
 
-        onSnapshot(collection(db, "goals"), (snap) => {
-          state.goals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          renderGoals();
-        });
+        onSnapshot(
+          collection(db, "goals"),
+          (snap) => {
+            state.goals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            renderGoals();
+          },
+          (err) => console.error("goals:", err),
+        );
       }
 
       // ===== RENDER UI =====
@@ -2459,40 +2466,78 @@
         renderSimulasi();
       }
 
+      // transaksi bulan yang sedang dilihat (budget & grafik = bulanan)
+      function monthTx() {
+        const ym = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, "0")}`;
+        return state.transactions.filter((t) => String(t.date).slice(0, 7) === ym);
+      }
+      const isReceived = (t) => (t.status || "received") === "received";
+
       function renderHero() {
-        const cashIncome = state.transactions
-          .filter((t) => t.type === "income" && t.status === "received")
+        const txs = state.transactions;
+        const cashIncomeAll = txs
+          .filter((t) => t.type === "income" && isReceived(t))
           .reduce((s, t) => s + t.amount, 0);
-        const pendingIncome = state.transactions
-          .filter((t) => t.type === "income" && t.status === "pending")
+        const expenseAll = txs
+          .filter((t) => t.type === "expense")
           .reduce((s, t) => s + t.amount, 0);
-        const expense = state.transactions
+        const pendingIncome = txs
+          .filter((t) => t.type === "income" && !isReceived(t))
+          .reduce((s, t) => s + t.amount, 0);
+        const mTx = monthTx();
+        const cashIncome = mTx
+          .filter((t) => t.type === "income" && isReceived(t))
+          .reduce((s, t) => s + t.amount, 0);
+        const expense = mTx
           .filter((t) => t.type === "expense")
           .reduce((s, t) => s + t.amount, 0);
         document.getElementById("saldoDisplay").textContent = fmt(
-          cashIncome - expense,
+          cashIncomeAll - expenseAll,
         );
         document.getElementById("incomeDisplay").textContent = fmt(cashIncome);
         document.getElementById("expenseDisplay").textContent = fmt(expense);
         document.getElementById("piutangDisplay").textContent = fmt(
           pendingIncome,
         );
+        // rata-rata pengeluaran harian bulan ini + prediksi akhir bulan
+        const dayNow = new Date().getDate();
+        const avg = expense / Math.max(1, dayNow);
+        document.getElementById("dailyAvg").textContent = fmt(avg);
+        document.getElementById("prediction").textContent = fmt(
+          avg * daysInMonth(state.currentYear, state.currentMonth),
+        );
       }
 
       function renderSimulasi() {
-        const cashIncome = state.transactions
-          .filter((t) => t.type === "income" && t.status === "received")
-          .reduce((s, t) => s + t.amount, 0);
+        // saldo fisik lifetime (hanya income yang benar-benar cair)
+        const balance = state.transactions
+          .reduce((s, t) => {
+            if (t.type === "expense") return s - t.amount;
+            if (isReceived(t)) return s + t.amount;
+            return s;
+          }, 0);
         const pendingIncome = state.transactions
-          .filter((t) => t.type === "income" && t.status === "pending")
+          .filter((t) => t.type === "income" && !isReceived(t))
           .reduce((s, t) => s + t.amount, 0);
 
         const fullMonthBudget = state.categories
           .filter((c) => c.type === "expense")
           .reduce((s, c) => s + getMonthlyBudget(c.id), 0);
+        // yang sudah terpakai bulan ini dari alokasi (tidak dihitung dua kali)
+        const spentThisMonth = state.categories
+          .filter((c) => c.type === "expense" && getMonthlyBudget(c.id) > 0)
+          .reduce(
+            (s, c) =>
+              s +
+              monthTx()
+                .filter((t) => t.category === c.id && t.type === "expense")
+                .reduce((a, t) => a + t.amount, 0),
+            0,
+          );
 
-        const sisaTunaiAkhirBulan = cashIncome - fullMonthBudget;
-        const totalAkhirBulan = cashIncome + pendingIncome - fullMonthBudget;
+        // ponytail: prediksi = saldo sekarang dikurangi sisa budget yang belum terpakai
+        const sisaTunaiAkhirBulan = balance - (fullMonthBudget - spentThisMonth);
+        const totalAkhirBulan = sisaTunaiAkhirBulan + pendingIncome;
 
         const el = document.getElementById("simulasiContent");
         el.innerHTML = `
@@ -2522,7 +2567,7 @@
         grid.innerHTML = incomeCats
           .map((cat) => {
             const received = state.transactions
-              .filter((t) => t.category === cat.id)
+              .filter((t) => t.category === cat.id && isReceived(t))
               .reduce((s, t) => s + t.amount, 0);
             return `<div class="card card-hover budget-card"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${cat.color}22;color:${cat.color}">${ICONS[cat.icon] || ICONS.ellipsis}</div><div><div class="budget-name">${cat.name}</div><div class="budget-limit">Sumber Dana</div></div></div></div><div class="budget-foot"><span class="muted">Diterima</span><span class="font-semibold" style="color:var(--success)">${fmt(received)}</span></div></div>`;
           })
@@ -2539,15 +2584,12 @@
         if (b.type === "daily") {
           const y = state.currentYear;
           const m = state.currentMonth;
-          if (b.createdAt) {
-            const [cy, cm, cd] = b.createdAt.split("-").map(Number);
-            if (cy === y && cm - 1 === m) {
-              return (
-                b.amount * Math.max(1, daysInMonth(y, m) - cd + 1)
-              );
-            }
-          }
-          return b.amount * daysInMonth(y, m);
+          const since = budgetActiveSince(b, y, m);
+          // budget belum aktif bulan ini (start bulan depan) -> tidak memotong alokasi
+          if (!since) return 0;
+          return (
+            b.amount * Math.max(0, daysInMonth(y, m) - Number(since.slice(8, 10)) + 1)
+          );
         }
         return b.amount || 0;
       }
@@ -2627,17 +2669,25 @@
 
       function renderBudget() {
         const grid = document.getElementById("budgetGrid");
-        const income = state.transactions.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
-        const expense = state.transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
-        const balance = income - expense;
+        // saldo fisik lifetime; piutang sengaja ikut dihitung bisa dipakai (keputusan user)
+        const balance = state.transactions.reduce((s, t) => {
+          if (t.type === "expense") return s - t.amount;
+          return s + t.amount;
+        }, 0);
         const totalBudget = state.categories.filter(c => c.type === "expense").reduce((s, c) => s + getMonthlyBudget(c.id), 0);
+        const mTx = monthTx();
         const spentBudgeted = state.categories
           .filter(c => c.type === "expense" && getMonthlyBudget(c.id) > 0)
-          .reduce((s, c) => s + state.transactions.filter(t => t.category === c.id).reduce((a, t) => a + t.amount, 0), 0);
-        const remaining = balance - totalBudget + spentBudgeted;
+          .reduce((s, c) => s + mTx.filter(t => t.category === c.id && t.type === "expense").reduce((a, t) => a + t.amount, 0), 0);
+        const dailySaved = state.categories
+          .filter((c) => c.type === "expense")
+          .reduce((s, c) => s + (catSavedUntilYesterday(c.id) || 0), 0);
+        // ponytail: hemat harian dilepas ke "belum dibudgeting" — masih aman
+        // karena cap harian sisa hari tetap terdanai (bebas = saldo - kebutuhan ke depan)
+        const remaining = balance - totalBudget + spentBudgeted + dailySaved;
 
         grid.innerHTML = state.categories.filter(c => c.type === "expense").map(cat => {
-          const spent = state.transactions.filter(t => t.category === cat.id).reduce((s, t) => s + t.amount, 0);
+          const spent = mTx.filter(t => t.category === cat.id && t.type === "expense").reduce((s, t) => s + t.amount, 0);
           const monthlyLimit = getMonthlyBudget(cat.id);
           const budget = state.budgets[cat.id];
           const percent = monthlyLimit > 0 ? Math.min(100, (spent / monthlyLimit) * 100) : 0;
@@ -2659,7 +2709,7 @@
         const remainingDays = isThisMonth ? daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1 : 0;
 
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${dailySaved !== 0 ? `<div class="text-xs mt-1" style="font-size: 10px; color: ${dailySaved > 0 ? "var(--success)" : "var(--danger)"}">*termasuk hemat harian ${dailySaved > 0 ? "+" : ""}${fmt(dailySaved)}</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
           <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 
@@ -2872,7 +2922,7 @@
         container.innerHTML = state.categories.filter(c => c.type === "expense").map(c => {
           const b = state.budgets[c.id] || { amount: 0, type: "monthly" };
           const isDaily = b.type === "daily";
-          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="text" class="input-padded budget-input fmt-rupiah" data-cat="${c.id}" value="${fmtRupiahInput(b.amount || 0)}" min="0" inputmode="numeric"></div><div class="budget-start-wrap" data-cat="${c.id}" style="${isDaily ? "" : "display:none"};margin-top:8px"><label class="form-label" style="margin-bottom:2px">Mulai dari (untuk budget harian)</label><input type="date" class="budget-start" value="${b.createdAt || todayStr}"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
+          return `<div class="budget-input-row"><div class="budget-head"><div class="budget-cat"><div class="cat-icon" style="background:${c.color}22;color:${c.color}">${ICONS[c.icon] || ICONS.ellipsis}</div><div class="budget-name">${c.name}</div></div><div class="budget-type-toggle"><button type="button" class="budget-type-btn ${!isDaily ? "active" : ""}" data-type="monthly">Bulanan</button><button type="button" class="budget-type-btn ${isDaily ? "active" : ""}" data-type="daily">Harian</button></div></div><div class="input-wrap"><span class="input-prefix">Rp</span><input type="text" class="input-padded budget-input fmt-rupiah" data-cat="${c.id}" value="${fmtRupiahInput(b.amount || 0)}" min="0" inputmode="numeric"></div><div class="budget-start-wrap" data-cat="${c.id}" style="${isDaily ? "" : "display:none"};margin-top:8px"><label class="form-label" style="margin-bottom:2px">Mulai dari (untuk budget harian)</label><input type="date" class="budget-start" min="${todayStr}" value="${b.createdAt || todayStr}"></div><div class="convert-hint" data-cat="${c.id}" style="font-size: 10px; color: var(--cyan); margin-top: 4px; display: flex; align-items: center; gap: 4px;"></div></div>`;
         }).join("");
 
         container.querySelectorAll(".budget-input-row").forEach(row => {
@@ -3019,13 +3069,15 @@
             state.selectedType === "income"
               ? state.selectedStatus
               : "received",
-          createdAt: Date.now(),
         };
         if (state.editingTxId)
           await setDoc(doc(db, "transactions", state.editingTxId), txData, {
             merge: true,
           });
-        else await setDoc(doc(collection(db, "transactions")), txData);
+        else {
+          txData.createdAt = Date.now();
+          await setDoc(doc(collection(db, "transactions")), txData);
+        }
         showToast("Transaksi tersimpan!", "success");
         document.getElementById("modalTx").classList.remove("active");
       }
@@ -3042,10 +3094,12 @@
           const now = new Date();
           const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
           const startInput = row.querySelector(".budget-start");
-          const createdAt =
+          let createdAt =
             (startInput && startInput.value) ||
             state.budgets[catId]?.createdAt ||
             todayStr;
+          // start date budget harian tidak boleh di masa depan (bikin alokasi bulan ini bocor)
+          if (type === "daily" && createdAt > todayStr) createdAt = todayStr;
           await setDoc(doc(db, "budgets", catId), {
             amount: val,
             type,
@@ -3356,7 +3410,14 @@
           }),
       );
 
-      loadData();
+      // auth anonim tanpa password — identitas minimal buat firestore rules
+      signInAnonymously(auth)
+        .then(loadData)
+        .catch((err) => {
+          console.error("Auth anonim gagal:", err);
+          document.getElementById("syncText").textContent = "Auth gagal";
+          loadData(); // fallback: rules mungkin masih terbuka saat migrasi
+        });
     </script>
   </body>
 </html>

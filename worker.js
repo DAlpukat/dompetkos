@@ -2,6 +2,7 @@ export default {
   async fetch(request, env, ctx) {
     const BOT_TOKEN = env.TELEGRAM_BOT_TOKEN || "";
     const PROJECT_ID = env.FIREBASE_PROJECT_ID || "dompetkos-b5877";
+    const FIREBASE_API_KEY = env.FIREBASE_API_KEY || "AIzaSyBqjpuBAUVKpwGpoZjyXNVyIZHKT10nGhc";
     const FS = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
     const fmtRp = (n) => "Rp " + Math.round(Number(n) || 0).toLocaleString("id-ID");
@@ -59,8 +60,23 @@ export default {
     const edit = (chatId, mid, text, reply_markup) => tg("editMessageText",{chat_id:chatId, message_id:mid, text, parse_mode:"HTML", ...(reply_markup&&{reply_markup})});
 
     const unpack = (d)=>({id:d.name.split("/").pop(), ...Object.fromEntries(Object.entries(d.fields||{}).map(([k,v])=>[k,Object.values(v)[0]]))});
+    // auth anonim (tanpa password) — identitas minimal buat firestore rules;
+    // token di-cache per isolate, refresh otomatis sebelum kadaluarsa
+    let anonTok=null, anonExp=0;
+    const anonToken = async ()=>{
+      if(anonTok && Date.now()<anonExp) return anonTok;
+      const r=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,{method:"POST",headers:{"content-type":"application/json"},body:"{}"}).then(r=>r.json());
+      if(!r.idToken) throw new Error("auth anonim gagal: "+((r.error&&r.error.message)||"no idToken"));
+      anonTok=r.idToken;
+      anonExp=Date.now()+(parseInt(r.expiresIn,10)||3600)*1000-60000;
+      return anonTok;
+    };
+    const fsFetch = async (url,opts={})=>{
+      const tok=await anonToken();
+      return fetch(url,{...opts,headers:{...(opts.headers||{}),authorization:`Bearer ${tok}`}});
+    };
     const fsList = async (col)=>{
-      const r=await fetch(`${FS}/${col}?pageSize=1000`).then(r=>r.json());
+      const r=await fsFetch(`${FS}/${col}?pageSize=1000`).then(r=>r.json());
       if(r.error) throw new Error(r.error.message);
       return (r.documents||[]).map(unpack);
     };
@@ -68,7 +84,7 @@ export default {
       const fields={};
       for(const [k,v] of Object.entries(obj)) fields[k]= typeof v==="number" ? (Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v}) : {stringValue:String(v)};
       const url=`${FS}/${col}${docId?`?documentId=${encodeURIComponent(docId)}`:""}`;
-      const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({fields})}).then(r=>r.json());
+      const r=await fsFetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({fields})}).then(r=>r.json());
       if(r.error) throw new Error(r.error.message);
       return r.name?r.name.split("/").pop():docId;
     };
@@ -91,12 +107,10 @@ export default {
     };
     const delSession = async (chatId)=>{ await fetch(`${FS}/telegram_sessions/${chatId}`,{method:"DELETE"}).catch(()=>{}); };
 
-    const saldoBulanIni = async ()=>{
-      const now=new Date(), first=isoOf(new Date(now.getFullYear(),now.getMonth(),1));
+    const saldoDompet = async ()=>{
       const txs=await fsList("transactions");
       let masuk=0, keluar=0, piutang=0;
       for(const t of txs){
-        if(String(t.date)<first) continue;
         if(t.type==="expense") keluar+=Number(t.amount)||0;
         else if(t.status==="pending") piutang+=Number(t.amount)||0;
         else if((t.status||"received")==="received") masuk+=Number(t.amount)||0;
@@ -104,8 +118,8 @@ export default {
       return {masuk, keluar, piutang};
     };
     const saldoText = async ()=>{
-      const {masuk,keluar,piutang}=await saldoBulanIni();
-      let out=`💰 <b>Saldo bulan ini</b>\n\nMasuk: ${fmtRp(masuk)}\nKeluar: ${fmtRp(keluar)}`;
+      const {masuk,keluar,piutang}=await saldoDompet();
+      let out=`💰 <b>Saldo dompet</b>\n\nMasuk: ${fmtRp(masuk)}\nKeluar: ${fmtRp(keluar)}`;
       if(piutang) out+=`\nPiutang: ${fmtRp(piutang)}`;
       out+=`\n\nSaldo kas: <b>${fmtRp(masuk-keluar)}</b>`;
       if(piutang) out+=`\nSaldo + piutang: <b>${fmtRp(masuk-keluar+piutang)}</b>`;
@@ -215,7 +229,7 @@ export default {
           let catId=sess.catId, catName="";
           if(catId){
             try{
-              const r=await fetch(`${FS}/categories/${catId}`).then(r=>r.json());
+              const r=await fsFetch(`${FS}/categories/${catId}`).then(r=>r.json());
               if(!r.error) catName=unpack(r).name||"";
             }catch{}
           }

@@ -31,9 +31,13 @@ export default {
     }
     function parseDate(raw){
       const s=String(raw).trim().toLowerCase();
-      if(!s||s==="-"||s==="skip"||s==="hari ini"||s.startsWith("hari ini")) return isoOf(new Date());
-      if(s.startsWith("kemarin")) return isoOf(new Date(Date.now()-864e5));
+      if(!s||s==="-"||s==="skip"||s==="hari ini"||s.startsWith("hari ini")||s==="tadi"||s.startsWith("tadi ")) return isoOf(new Date());
+      if(s.startsWith("kemarin")||s.startsWith("kemaren")||s.startsWith("kmrn")) return isoOf(new Date(Date.now()-864e5));
       if(s.startsWith("besok")) return isoOf(new Date(Date.now()+864e5));
+      if(s==="lusa"||s.startsWith("lusa")) return isoOf(new Date(Date.now()+2*864e5));
+      let m2=s.match(/^(\d+)\s*hari\s*(yang\s*)?(lalu|yg\s*lalu)/); if(m2) return isoOf(new Date(Date.now()-parseInt(m2[1],10)*864e5));
+      if(/^seminggu(\s+yang)?\s+lalu/.test(s)) return isoOf(new Date(Date.now()-7*864e5));
+      if(/^sebulan(\s+yang)?\s+lalu/.test(s)){ const d=new Date(); d.setMonth(d.getMonth()-1); return isoOf(d); }
       let y,mo,d,hadYear=true, m=s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
       if(m){ y=+m[1]; mo=+m[2]; d=+m[3]; }
       else if((m=s.match(/^(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?$/))){
@@ -55,7 +59,7 @@ export default {
       let working=original;
       const lower=original.toLowerCase();
       let date=null, dateRaw=null;
-      const dateRegex=/\b(hari ini|kemarin|besok|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}(?:[-/.]\d{2,4})?)\b/gi;
+      const dateRegex=/\b(\d+\s*hari\s*(yang\s*)?(lalu|yg\s*lalu)|seminggu(\s+yang)?\s+lalu|sebulan(\s+yang)?\s+lalu|hari ini|kemarin|kemaren|kmrn|besok|lusa|tadi|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}(?:[-/.]\d{2,4})?)\b/gi;
       let m;
       while((m=dateRegex.exec(lower))!==null){
         const cand=m[0];

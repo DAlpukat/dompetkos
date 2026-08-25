@@ -49,6 +49,78 @@ export default {
       return out;
     }
 
+    function parseQuickInput(raw, categories){
+      const original=String(raw).trim();
+      if(!original || original.startsWith("/")) return null;
+      let working=original;
+      const lower=original.toLowerCase();
+      let date=null, dateRaw=null;
+      const dateRegex=/\b(hari ini|kemarin|besok|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}(?:[-/.]\d{2,4})?)\b/gi;
+      let m;
+      while((m=dateRegex.exec(lower))!==null){
+        const cand=m[0];
+        const parsed=parseDate(cand);
+        if(parsed){ date=parsed; dateRaw=cand; break; }
+      }
+      if(dateRaw){
+        const idx=lower.indexOf(dateRaw.toLowerCase());
+        if(idx!==-1) working=working.slice(0,idx)+" "+working.slice(idx+dateRaw.length);
+      }
+      if(!date) date=isoOf(new Date());
+      const lower2=working.toLowerCase();
+      const amtRegex=/(?:rp\s*)?\d[\d.,]*\s*(?:juta|jt|ribu|rb|k)?\b/gi;
+      let amount=0, amountRaw=null;
+      let a;
+      while((a=amtRegex.exec(lower2))!==null){
+        const cand=a[0];
+        const parsed=parseAmount(cand);
+        if(parsed>0){ amount=parsed; amountRaw=cand; break; }
+      }
+      if(!amount) return null;
+      {
+        const lw=working.toLowerCase();
+        const idx=lw.indexOf(amountRaw.toLowerCase().trim());
+        if(idx!==-1) working=working.slice(0,idx)+" "+working.slice(idx+amountRaw.length);
+      }
+      let type="expense";
+      const incWords=["pemasukan","masuk","income","gajian","gaji","terima","dapat","nambah"];
+      const expWords=["pengeluaran","keluar","expense","beli","bayar","jajan","belanja"];
+      const hasInc=incWords.some(w=>new RegExp(`\\b${w}\\b`,"i").test(original));
+      const hasExp=expWords.some(w=>new RegExp(`\\b${w}\\b`,"i").test(original));
+      if(hasInc && !hasExp) type="income";
+      else if(hasExp && !hasInc) type="expense";
+      else if(hasInc && hasExp){
+        const iIdx=Math.min(...incWords.map(w=>{const i=lower.indexOf(w);return i===-1?Infinity:i}));
+        const eIdx=Math.min(...expWords.map(w=>{const i=lower.indexOf(w);return i===-1?Infinity:i}));
+        type=iIdx<eIdx?"income":"expense";
+      }
+      const allTypeWords=[...incWords,...expWords];
+      for(const w of allTypeWords){
+        const re=new RegExp(`\\b${w}\\b`,"i");
+        if(re.test(working)){ working=working.replace(re," "); break; }
+      }
+      working=working.replace(/\brp\b/gi," ");
+      const FOOD=["ikan","telur","nasi","ayam","tempe","tahu","sayur","sambal","rendang","soto","bakso","mie","bebek","lele","tongkol","teri","cumi","udang","daging","sapi","kambing","opor","gulai","sate","pepes","pindang","kangkung","bayam","sop","nila","kopi","teh","es","roti","susu","keju"];
+      const ALIAS={makan:FOOD.concat(["makan","mkn","kuliner","warteg","jajan","sarapan","lauk","makanan","minum","ngopi","jajan"]), transport:["bensin","grab","gojek","ojek","transport","angkot","bus","kereta","parkir"], kos:["kos","kost","kontrakan","sewa"], gaji:["gaji","gajian","thr","bonus"]};
+      const aliasFor=(name)=>{ const k=name.toLowerCase(); if(k.includes("makan")||k.includes("kuliner")||k.includes("jajan")) return ALIAS.makan; if(k.includes("transport")||k.includes("bensin")) return ALIAS.transport; if(k.includes("kos")) return ALIAS.kos; if(k.includes("gaji")||k.includes("income")||k.includes("pemasukan")) return ALIAS.gaji; return []; };
+      let catId=null, catName="", bestScore=-1;
+      if(categories && categories.length){
+        const catsFiltered=categories.filter(c=>c.type===type);
+        const wl=working.toLowerCase();
+        for(const c of catsFiltered){
+          let score=0;
+          const cn=c.name.toLowerCase();
+          if(wl.includes(cn)) score+=2;
+          for(const al of aliasFor(c.name)) if(wl.includes(al)) score+=1;
+          if(score>bestScore){ bestScore=score; catId=c.id; catName=c.name; }
+        }
+        if(bestScore<=0){ catId=null; catName=""; }
+      }
+      let note=working.trim().replace(/\s+/g," ").replace(/^[-–—]+/,"").trim().slice(0,200);
+      if(catName && new RegExp("\\b"+catName.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b\\s*$","i").test(note)) note=note.replace(new RegExp("\\b"+catName.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b\\s*$","i"),"").trim().replace(/[,\\s]+$/,"").trim();
+      return {type, amount, date, catId, catName, note, amountRaw, dateRaw};
+    }
+
     const COLORS=["#cb6441","#b2572f","#9c87f6","#f4997b","#ded7c2","#dad2ef","#525044","#b4b1a3"];
 
     const tg = async (method, body) => {
@@ -181,7 +253,7 @@ export default {
         const cmd=text.split(/\s+/)[0].toLowerCase().split("@")[0];
         if(cmd==="/start"||cmd==="/help"){
           await delSession(String(chatId));
-          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n/input — catat transaksi\n/saldo — cek saldo\n/batal — batalkan\n\nNominal: 15000, 15rb, 2jt (titik/koma bebas)\nTanggal: Hari ini, kemarin, 20/8, 2026-08-20\n\nBot & web pakai data yang sama.");
+          await send(chatId,"👋 <b>DompetKos Bot</b>\n\n<b>Kilat (1 baris jadi):</b>\n<code>keluar 25rb makan siang kemarin</code>\n<code>masuk 2jt gajian</code>\n<code>15rb kopi 20/8</code>\n\n/input — step-by-step\n/saldo — cek saldo\n/batal — batalkan\n\nNominal: 15000, 15rb, 2jt (titik/koma bebas)\nTanggal: Hari ini, kemarin, 20/8, 2026-08-20\n\nBot & web pakai data yang sama.");
           return;
         }
         if(cmd==="/saldo"){ try{ await send(chatId, await saldoText()); }catch(e){ await send(chatId,"Gagal ambil saldo: "+esc(e.message)); } return; }
@@ -190,7 +262,30 @@ export default {
         return;
       }
       const sess=await getSession(String(chatId));
-      if(!sess){ await send(chatId,"Ketik /input buat catat transaksi, atau /saldo buat cek saldo."); return; }
+      if(!sess){
+        // ponytail: coba kilat dulu
+        try{
+          const cats=await fsList("categories");
+          const q=parseQuickInput(text, cats);
+          if(q){
+            let catId=q.catId, catName=q.catName;
+            if(!catId && q.catName) catName=q.catName;
+            if(!catName && catId){
+              try{ const r=await fsFetch(`${FS}/categories/${catId}`).then(r=>r.json()); if(!r.error) catName=unpack(r).name||""; }catch{}
+            }
+            await fsAdd("transactions",{type:q.type, category:catId||"", amount:q.amount, note:q.note||"", date:q.date, status:"received", createdAt:Date.now()});
+            const jenis=q.type==="expense"?"💸 Pengeluaran":"💰 Pemasukan";
+            let conf=`✅ <b>Tersimpan!</b> (kilat)\n\n${jenis} — ${esc(catName||catId||"Lainnya")}\n💵 ${fmtRp(q.amount)}`;
+            if(q.note) conf+=`\n📝 ${esc(q.note)}`;
+            conf+=`\n📅 ${fmtDate(q.date)}`;
+            try{ conf+=`\n\n${await saldoText()}`;}catch{}
+            await send(chatId, conf);
+            return;
+          }
+        }catch(e){ console.error("quick fail:",e.message); }
+        await send(chatId,"Ketik kilat contoh:\n<code>keluar 25rb makan siang kemarin</code>\n<code>masuk 2jt gajian</code>\n\natau /input buat step-by-step, /saldo cek saldo.");
+        return;
+      }
       switch(sess.step){
         case "type":
         case "category":{

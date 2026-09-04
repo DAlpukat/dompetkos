@@ -2939,9 +2939,15 @@
         const dailySaved = state.categories
           .filter((c) => c.type === "expense")
           .reduce((s, c) => s + (catSavedUntilYesterday(c.id) || 0), 0);
-        // ponytail: hemat harian dilepas ke "belum dibudgeting" — masih aman
-        // karena cap harian sisa hari tetap terdanai (bebas = saldo - kebutuhan ke depan)
-        const remaining = balance - totalBudget + spentBudgeted + dailySaved;
+        // ponytail: hemat bersih = hemat kotor - pengeluaran tanpa budget (printilan)
+        // hemat kotor dilepas penuh bikin ilusi kaya kalau printilan sudah ngabisin
+        const unbudgetedSpent = mTx
+          .filter((t) => t.type === "expense" && !getMonthlyBudget(t.category))
+          .reduce((s, t) => s + t.amount, 0);
+        const hematBersih = dailySaved - unbudgetedSpent;
+        // ponytail: kalau hemat kotor positif, printilan ngabisin dulu; kalau sudah boros, jangan double potong
+        const hematRelease = dailySaved > 0 ? Math.max(0, hematBersih) : dailySaved;
+        const remaining = balance - totalBudget + spentBudgeted + hematRelease;
 
         grid.innerHTML = state.categories.filter(c => c.type === "expense").map(cat => {
           const spent = mTx.filter(t => t.category === cat.id && t.type === "expense").reduce((s, t) => s + t.amount, 0);
@@ -2965,8 +2971,15 @@
         const isThisMonth = today.getMonth() === state.currentMonth && today.getFullYear() === state.currentYear;
         const remainingDays = isThisMonth ? daysInMonth(state.currentYear, state.currentMonth) - today.getDate() + 1 : 0;
 
+        const hematLine = (() => {
+          if (dailySaved === 0 && unbudgetedSpent === 0) return "";
+          if (unbudgetedSpent === 0) return `<div class="text-xs mt-1" style="font-size: 10px; color: ${dailySaved > 0 ? "var(--success)" : "var(--danger)"}">*termasuk hemat harian ${dailySaved > 0 ? "+" : ""}${fmt(dailySaved)}</div>`;
+          if (dailySaved < 0) return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--danger)">*boros harian ${fmt(dailySaved)} + tanpa budget ${fmt(unbudgetedSpent)}</div>`;
+          if (hematBersih <= 0) return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--danger)">*hemat ${fmt(dailySaved)} habis kepotong tanpa budget ${fmt(unbudgetedSpent)} (bersih 0)</div>`;
+          return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--success)">*termasuk hemat bersih ${fmt(hematBersih)} (kotor ${fmt(dailySaved)} - tanpa budget ${fmt(unbudgetedSpent)})</div>`;
+        })();
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${dailySaved !== 0 ? `<div class="text-xs mt-1" style="font-size: 10px; color: ${dailySaved > 0 ? "var(--success)" : "var(--danger)"}">*termasuk hemat harian ${dailySaved > 0 ? "+" : ""}${fmt(dailySaved)}</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? 'var(--danger)' : 'var(--lime)'}">${fmt(remaining)}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${hematLine}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ''}</div>
           <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 

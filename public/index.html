@@ -1759,6 +1759,62 @@
         opacity: 0.35;
         cursor: not-allowed;
       }
+      /* ===== BATCH ENTRY (input banyak sekaligus) ===== */
+      .batch-add {
+        width: 100%;
+        margin-top: 12px;
+        padding: 12px;
+        border: 1.5px dashed var(--border);
+        border-radius: var(--radius-md);
+        background: transparent;
+        color: var(--muted-foreground);
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .batch-add:active {
+        background: var(--muted);
+      }
+      .batch-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--card);
+        position: relative;
+      }
+      .batch-row input,
+      .batch-row select {
+        width: 100%;
+        background: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        min-width: 0;
+      }
+      .batch-row .batch-note {
+        grid-column: 1 / -1;
+      }
+      .batch-del {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--danger);
+        color: #fff;
+        font-size: 14px;
+        line-height: 1;
+        border: none;
+        cursor: pointer;
+      }
       #filterMonth {
         width: auto;
         flex: 1 1 110px;
@@ -2203,6 +2259,15 @@
             </button>
           </div>
         </form>
+        <button type="button" id="enterBatch" class="batch-add">＋ Input banyak sekaligus</button>
+        <div id="batchWrap" class="hidden">
+          <div id="batchRows"></div>
+          <button type="button" id="batchAdd" class="batch-add">＋ Tambah transaksi</button>
+          <div class="flex gap-2 mt-4">
+            <button type="button" class="btn btn-ghost flex-1" id="batchCancel">Batal</button>
+            <button type="button" class="btn btn-primary flex-1" id="batchSave">Simpan Semua</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2569,6 +2634,7 @@
         filterMonth: "all",
         txPage: 1,
         txPerPage: 10,
+        batchRows: null,
       };
 
       let selectedIcon = "utensils";
@@ -3237,6 +3303,13 @@
                   chip.classList.add("selected");
                 };
               });
+              if (state.batchRows) {
+                const ids = cats.map((c) => c.id);
+                state.batchRows.forEach((r) => {
+                  if (!ids.includes(r.cat)) r.cat = ids[0] || "";
+                });
+                renderBatchRows();
+              }
             };
           });
 
@@ -3396,17 +3469,7 @@
         const note = document.getElementById("txNote").value;
         const date = document.getElementById("txDate").value;
         if (!amount) return showToast("Nominal harus lebih dari 0", "warning");
-        const txData = {
-          type: state.selectedType,
-          category: state.selectedCat,
-          amount,
-          note,
-          date,
-          status:
-            state.selectedType === "income"
-              ? state.selectedStatus
-              : "received",
-        };
+        const txData = newTxData(amount, note, date);
         // ponytail: optimistic — tutup popup langsung, Firestore di belakang
         const isEdit = !!state.editingTxId;
         const backup = [...state.transactions];
@@ -3427,6 +3490,107 @@
         try {
           if (isEdit) await setDoc(doc(db, "transactions", editingId), txData, { merge: true });
           else await setDoc(docRef, txData);
+        } catch (err) {
+          console.error(err);
+          state.transactions = backup;
+          renderAll();
+          showToast("Gagal menyimpan, coba lagi", "danger");
+        }
+      }
+
+      function newTxData(amount, note, date, cat = state.selectedCat) {
+        return {
+          type: state.selectedType,
+          category: cat,
+          amount,
+          note,
+          date,
+          status:
+            state.selectedType === "income"
+              ? state.selectedStatus
+              : "received",
+        };
+      }
+
+      // ===== BATCH ENTRY (input banyak sekaligus) =====
+      const escAttr = (s) =>
+        String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+      function enterBatchMode() {
+        state.batchRows = [
+          {
+            amount: document.getElementById("txAmount").value,
+            cat: state.selectedCat,
+            note: document.getElementById("txNote").value,
+            date: document.getElementById("txDate").value,
+          },
+        ];
+        document.getElementById("txForm").classList.add("hidden");
+        document.getElementById("enterBatch").classList.add("hidden");
+        document.getElementById("batchWrap").classList.remove("hidden");
+        renderBatchRows();
+      }
+      function exitBatchMode() {
+        state.batchRows = null;
+        document.getElementById("txForm").classList.remove("hidden");
+        document.getElementById("enterBatch").classList.remove("hidden");
+        document.getElementById("batchWrap").classList.add("hidden");
+      }
+      function addBatchRow() {
+        const prev = state.batchRows[state.batchRows.length - 1] || {};
+        state.batchRows.push({
+          amount: "",
+          cat: prev.cat || state.selectedCat,
+          note: "",
+          date: prev.date || document.getElementById("txDate").value,
+        });
+        renderBatchRows();
+      }
+      function renderBatchRows() {
+        const cats = state.categories.filter(
+          (c) => c.type === state.selectedType,
+        );
+        document.getElementById("batchRows").innerHTML = state.batchRows
+          .map(
+            (r, i) => `
+          <div class="batch-row" data-i="${i}">
+            ${state.batchRows.length > 1 ? `<button type="button" class="batch-del" data-del="${i}">×</button>` : ""}
+            <input class="fmt-rupiah" inputmode="numeric" placeholder="Rp 0" data-f="amount" data-i="${i}" value="${escAttr(r.amount)}">
+            <select data-f="cat" data-i="${i}">${cats.map((c) => `<option value="${c.id}" ${c.id === r.cat ? "selected" : ""}>${c.name}</option>`).join("")}</select>
+            <input class="batch-note" placeholder="Catatan" data-f="note" data-i="${i}" value="${escAttr(r.note)}">
+            <input type="date" data-f="date" data-i="${i}" value="${r.date}">
+          </div>`,
+          )
+          .join("");
+        updateBatchSaveLabel();
+      }
+      function updateBatchSaveLabel() {
+        const n = state.batchRows.filter((r) => numOf(r.amount) > 0).length;
+        document.getElementById("batchSave").textContent = `Simpan Semua (${n})`;
+      }
+      async function handleBatchSave() {
+        const rows = state.batchRows
+          .map((r) => ({ ...r, amount: numOf(r.amount) }))
+          .filter((r) => r.amount > 0);
+        if (!rows.length) return showToast("Isi nominal dulu", "warning");
+        const backup = [...state.transactions];
+        const now = Date.now();
+        const saved = rows.map((r, i) => ({
+          id: doc(collection(db, "transactions")).id,
+          ...newTxData(r.amount, r.note, r.date, r.cat),
+          createdAt: now + i,
+        }));
+        state.transactions.push(...saved);
+        exitBatchMode();
+        document.getElementById("modalTx").classList.remove("active");
+        renderAll();
+        showToast(`${saved.length} transaksi tersimpan!`, "success");
+        try {
+          await Promise.all(
+            saved.map((s) => {
+              const { id, ...data } = s;
+              return setDoc(doc(db, "transactions", id), data);
+            }),
+          );
         } catch (err) {
           console.error(err);
           state.transactions = backup;
@@ -3527,6 +3691,8 @@
         document.getElementById("txAmount").value = fmtRupiahInput(tx.amount);
         document.getElementById("txNote").value = tx.note || "";
         document.getElementById("txDate").value = tx.date;
+        exitBatchMode();
+        document.getElementById("enterBatch").classList.add("hidden");
         setupTxModal();
         document.querySelector(`#modalTx [data-type="${tx.type}"]`).click();
         if (tx.type === "income") {
@@ -3711,6 +3877,7 @@
 
       document.getElementById("fabAdd").onclick = () => {
         state.editingTxId = null;
+        exitBatchMode();
         document.getElementById("txForm").reset();
         document.getElementById("modalTxTitle").textContent = "Catat Transaksi";
         const now = new Date();
@@ -3722,6 +3889,38 @@
       document.getElementById("btnAddTx").onclick = () =>
         document.getElementById("fabAdd").click();
       document.getElementById("txForm").onsubmit = handleSaveTx;
+      document.getElementById("enterBatch").onclick = enterBatchMode;
+      document.getElementById("batchAdd").onclick = addBatchRow;
+      document.getElementById("batchCancel").onclick = (e) => {
+        exitBatchMode();
+        closeModal(e.target);
+      };
+      document.getElementById("batchSave").onclick = handleBatchSave;
+      document.getElementById("batchRows").addEventListener("input", (e) => {
+        const { f, i } = e.target.dataset;
+        if (f == null || i == null) return;
+        state.batchRows[+i][f] = e.target.value;
+        if (f === "amount") updateBatchSaveLabel();
+      });
+      document.getElementById("batchRows").addEventListener("change", (e) => {
+        const { f, i } = e.target.dataset;
+        if (f == null || i == null) return;
+        const idx = +i;
+        state.batchRows[idx][f] = e.target.value;
+        if (f === "date" || f === "cat") {
+          // ganti di tengah → baris bawah ikut
+          state.batchRows.forEach((r, j) => {
+            if (j > idx) r[f] = state.batchRows[idx][f];
+          });
+          renderBatchRows();
+        }
+      });
+      document.getElementById("batchRows").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-del]");
+        if (!b) return;
+        state.batchRows.splice(+b.dataset.del, 1);
+        renderBatchRows();
+      });
 
       document.getElementById("btnEditBudget").onclick = () => {
         setupBudgetModal();

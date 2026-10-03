@@ -3063,11 +3063,30 @@
           );
         const total = txs.length;
         const per = state.txPerPage;
-        const totalPages = Math.max(1, Math.ceil(total / per));
+        // kelompokkan per hari dulu, lalu isi halaman dari blok hari —
+        // satu hari tidak pernah terbelah antar halaman
+        const days = [];
+        txs.forEach((t) => {
+          const last = days[days.length - 1];
+          if (last && last.date === t.date) last.items.push(t);
+          else days.push({ date: t.date, items: [t] });
+        });
+        const pages = [];
+        let cur = [], curCount = 0;
+        days.forEach((d) => {
+          if (curCount && curCount + d.items.length > per) {
+            pages.push(cur); cur = []; curCount = 0;
+          }
+          cur.push(d); curCount += d.items.length;
+        });
+        if (cur.length) pages.push(cur);
+        const totalPages = Math.max(1, pages.length);
         if (state.txPage > totalPages) state.txPage = totalPages;
         if (state.txPage < 1) state.txPage = 1;
-        const start = (state.txPage - 1) * per;
-        const pageTxs = txs.slice(start, start + per);
+        const start = pages
+          .slice(0, state.txPage - 1)
+          .reduce((s, p) => s + p.reduce((n, d) => n + d.items.length, 0), 0);
+        const pageTxs = (pages[state.txPage - 1] || []).flatMap((d) => d.items);
 
         if (total === 0) {
           list.innerHTML = `<div class="empty"><div class="empty-icon">${ICONS.inbox}</div><div class="text-sm font-medium mb-1">Belum ada transaksi</div><div class="text-xs muted">Coba ubah filter bulan/kategori</div></div>`;
@@ -3097,12 +3116,12 @@
           .join("");
         // pagination
         if(pagEl){
-          if(total <= per){
+          if(totalPages <= 1){
             pagEl.classList.add("hidden");
             pagEl.innerHTML="";
           } else {
             pagEl.classList.remove("hidden");
-            const from = start+1, to=Math.min(start+per, total);
+            const from = start+1, to=Math.min(start+pageTxs.length, total);
             let pagesHtml="";
             // window 5 pages
             let startPage=Math.max(1, state.txPage-2);

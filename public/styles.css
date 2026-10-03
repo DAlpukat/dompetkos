@@ -1932,7 +1932,7 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
-        padding: 12px 64px 10px 44px;
+        padding: 42px 12px 12px;
         border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         background: var(--card);
@@ -1949,10 +1949,10 @@
       }
       .batch-idx {
         position: absolute;
-        left: 10px;
-        top: 12px;
-        width: 20px;
-        height: 20px;
+        left: 12px;
+        top: 10px;
+        width: 22px;
+        height: 22px;
         border-radius: 50%;
         background: var(--muted);
         border: 1px solid var(--border);
@@ -1985,6 +1985,10 @@
         font-size: 12px;
         min-width: 0;
       }
+      /* ponytail: rule di atas menang lawan .input-padded, kembalikan ruang Rp */
+      .batch-row .input-padded {
+        padding-left: 38px;
+      }
       .batch-sub {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1997,17 +2001,17 @@
       }
       .batch-tools {
         position: absolute;
-        top: 50%;
-        right: 12px;
-        transform: translateY(-50%);
+        top: 8px;
+        right: 10px;
+        transform: none;
         display: flex;
-        gap: 4px;
+        gap: 6px;
         z-index: 1;
       }
       .batch-dup,
       .batch-del {
-        width: 24px;
-        height: 24px;
+        width: 30px;
+        height: 26px;
         border-radius: var(--radius-sm);
         background: var(--muted);
         border: 1px solid var(--border);

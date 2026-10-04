@@ -1,4 +1,4 @@
-const CACHE = "dompetkos-v6";
+const CACHE = "dompetkos-v1";
 const SHELL = ["./", "./index.html", "./manifest.json", "./dompet.png", "./dompet.svg"];
 
 self.addEventListener("install", (e) => {

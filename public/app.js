@@ -593,54 +593,42 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 
       function renderBudget() {
         const grid = document.getElementById("budgetGrid");
-        // ponytail: saldo fisik tunai lifetime (piutang tidak ikut)
+        // saldo fisik lifetime; piutang sengaja ikut dihitung bisa dipakai (keputusan user)
         const balance = state.transactions.reduce((s, t) => {
           if (t.type === "expense") return s - t.amount;
-          if (t.type === "income" && isReceived(t)) return s + t.amount;
-          return s;
+          return s + t.amount;
         }, 0);
         const totalBudget = state.categories
           .filter((c) => c.type === "expense")
           .reduce((s, c) => s + getMonthlyBudget(c.id), 0);
         const mTx = monthTx();
-        const today = new Date();
-        const isThisMonth =
-          today.getMonth() === state.currentMonth &&
-          today.getFullYear() === state.currentYear;
-        const remainingDays = isThisMonth
-          ? daysInMonth(state.currentYear, state.currentMonth) -
-            today.getDate() +
-            1
-          : 0;
-        // ponytail: sisa budgeting = kebutuhan depan; printilan (tanpa budget) tidak dicadangkan
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-        const sisaBudget = state.categories
+        const spentBudgeted = state.categories
           .filter((c) => c.type === "expense" && getMonthlyBudget(c.id) > 0)
-          .reduce((s, c) => {
-            const b = state.budgets[c.id];
-            const spent = mTx
-              .filter((t) => t.category === c.id && t.type === "expense")
-              .reduce((a, t) => a + t.amount, 0);
-            if (b && b.type === "daily" && isThisMonth) {
-              const rate = Number(b.amount) || 0;
-              const spentToday = mTx
-                .filter(
-                  (t) =>
-                    t.category === c.id &&
-                    t.type === "expense" &&
-                    t.date === todayStr,
-                )
-                .reduce((a, t) => a + t.amount, 0);
-              // ponytail: jatah harian fixed; lebih hari ini makan uang bebas
-              return s + Math.max(0, rate - spentToday) + rate * (remainingDays - 1);
-            }
-            return s + Math.max(0, getMonthlyBudget(c.id) - spent);
-          }, 0);
+          .reduce(
+            (s, c) =>
+              s +
+              mTx
+                .filter((t) => t.category === c.id && t.type === "expense")
+                .reduce((a, t) => a + t.amount, 0),
+            0,
+          );
+        const dailySaved = state.categories
+          .filter((c) => c.type === "expense")
+          .reduce((s, c) => s + (catSavedUntilYesterday(c.id) || 0), 0);
+        // ponytail: hemat bersih = hemat kotor - pengeluaran tanpa budget (printilan)
+        // hemat kotor dilepas penuh bikin ilusi kaya kalau printilan sudah ngabisin
+        const unbudgetedSpent = mTx
+          .filter((t) => t.type === "expense" && !getMonthlyBudget(t.category))
+          .reduce((s, t) => s + t.amount, 0);
+        const hematBersih = dailySaved - unbudgetedSpent;
+        // ponytail: kalau hemat kotor positif, printilan ngabisin dulu; kalau sudah boros, jangan double potong
+        const hematRelease =
+          dailySaved > 0 ? Math.max(0, hematBersih) : dailySaved;
+        const remaining = balance - totalBudget + spentBudgeted + hematRelease;
         const pendingIncome = state.transactions
           .filter((t) => t.type === "income" && !isReceived(t))
           .reduce((s, t) => s + t.amount, 0);
-        const remainingTunai = balance - sisaBudget;
-        const remaining = remainingTunai + pendingIncome;
+        const remainingTunai = remaining - pendingIncome;
 
         grid.innerHTML = state.categories
           .filter((c) => c.type === "expense")
@@ -668,8 +656,28 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
           })
           .join("");
 
+        const today = new Date();
+        const isThisMonth =
+          today.getMonth() === state.currentMonth &&
+          today.getFullYear() === state.currentYear;
+        const remainingDays = isThisMonth
+          ? daysInMonth(state.currentYear, state.currentMonth) -
+            today.getDate() +
+            1
+          : 0;
+
+        const hematLine = (() => {
+          if (dailySaved === 0 && unbudgetedSpent === 0) return "";
+          if (unbudgetedSpent === 0)
+            return `<div class="text-xs mt-1" style="font-size: 10px; color: ${dailySaved > 0 ? "var(--success)" : "var(--danger)"}">*termasuk hemat harian ${dailySaved > 0 ? "+" : ""}${fmt(dailySaved)}</div>`;
+          if (dailySaved < 0)
+            return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--danger)">*boros harian ${fmt(dailySaved)} + tanpa budget ${fmt(unbudgetedSpent)}</div>`;
+          if (hematBersih <= 0)
+            return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--danger)">*hemat ${fmt(dailySaved)} habis kepotong tanpa budget ${fmt(unbudgetedSpent)} (bersih 0)</div>`;
+          return `<div class="text-xs mt-1" style="font-size: 10px; color: var(--success)">*termasuk hemat bersih ${fmt(hematBersih)} (kotor ${fmt(dailySaved)} - tanpa budget ${fmt(unbudgetedSpent)})</div>`;
+        })();
         document.getElementById("budgetSummary").innerHTML = `
-          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? "var(--danger)" : "var(--lime)"}">${fmt(remaining)}${pendingIncome ? ` <span style="font-size:13px;font-weight:500;color:${remainingTunai < 0 ? "var(--danger)" : "var(--muted-foreground)"}">${fmt(remainingTunai)} tanpa piutang</span>` : ""}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ""}</div>
+          <div><div class="section-sub">Sisa Uang Belum Dibudgeting</div><div class="text-2xl font-bold" style="color: ${remaining < 0 ? "var(--danger)" : "var(--lime)"}">${fmt(remaining)}${pendingIncome ? ` <span style="font-size:13px;font-weight:500;color:${remainingTunai < 0 ? "var(--danger)" : "var(--muted-foreground)"}">(${fmt(remainingTunai)} tanpa piutang)</span>` : ""}</div>${isThisMonth && remainingDays > 0 ? `<div class="text-xs muted mt-1" style="font-size: 10px;">*${remainingDays} hari tersisa bln ini</div>` : ""}${hematLine}${remaining < 0 ? '<div class="text-xs mt-1" style="color: var(--danger)">Defisit Budgeting!</div>' : ""}</div>
           <div class="text-right"><div class="section-sub">Saldo Saat Ini</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(balance)}</div><div class="section-sub mt-2">Total Budget</div><div class="text-lg font-bold" style="color: var(--fg)">${fmt(totalBudget)}</div></div>`;
       }
 

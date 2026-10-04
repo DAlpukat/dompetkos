@@ -437,7 +437,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
         // saldo fisik lifetime (hanya income yang benar-benar cair)
         const balance = state.transactions.reduce((s, t) => {
           if (t.type === "expense") return s - t.amount;
-          if (isReceived(t)) return s + t.amount;
+          if (t.type === "income" && isReceived(t)) return s + t.amount;
           return s;
         }, 0);
         const pendingIncome = state.transactions
@@ -596,7 +596,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
         // ponytail: saldo fisik tunai lifetime (piutang tidak ikut)
         const balance = state.transactions.reduce((s, t) => {
           if (t.type === "expense") return s - t.amount;
-          if (isReceived(t)) return s + t.amount;
+          if (t.type === "income" && isReceived(t)) return s + t.amount;
           return s;
         }, 0);
         const totalBudget = state.categories

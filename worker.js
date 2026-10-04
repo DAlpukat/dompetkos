@@ -188,8 +188,8 @@ export default {
       let masuk=0, keluar=0, piutang=0;
       for(const t of txs){
         if(t.type==="expense") keluar+=Number(t.amount)||0;
-        else if(t.type==="income"&&t.status==="pending") piutang+=Number(t.amount)||0;
-        else if(t.type==="income"&&(t.status||"received")==="received") masuk+=Number(t.amount)||0;
+        else if(t.status==="pending") piutang+=Number(t.amount)||0;
+        else if((t.status||"received")==="received") masuk+=Number(t.amount)||0;
       }
       return {masuk, keluar, piutang};
     };

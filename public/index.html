@@ -3066,28 +3066,42 @@
           );
         const total = txs.length;
         const per = state.txPerPage;
-        const totalPages = Math.max(1, Math.ceil(total / per));
+        // 1 hari tidak dipecah antar halaman
+        const days = [];
+        txs.forEach((t) => {
+          const last = days[days.length - 1];
+          if (last && last.date === t.date) last.txs.push(t);
+          else days.push({ date: t.date, txs: [t] });
+        });
+        const pages = [];
+        let pageDays = [],
+          pageCount = 0,
+          pageStart = 0;
+        days.forEach((d) => {
+          if (pageCount >= per) {
+            pages.push({ days: pageDays, from: pageStart + 1, to: pageStart + pageCount });
+            pageStart += pageCount;
+            pageDays = [];
+            pageCount = 0;
+          }
+          pageDays.push(d);
+          pageCount += d.txs.length;
+        });
+        if (pageDays.length) pages.push({ days: pageDays, from: pageStart + 1, to: pageStart + pageCount });
+        const totalPages = Math.max(1, pages.length);
         if (state.txPage > totalPages) state.txPage = totalPages;
         if (state.txPage < 1) state.txPage = 1;
-        const start = (state.txPage - 1) * per;
-        const pageTxs = txs.slice(start, start + per);
 
         if (total === 0) {
           list.innerHTML = `<div class="empty"><div class="empty-icon">${ICONS.inbox}</div><div class="text-sm font-medium mb-1">Belum ada transaksi</div><div class="text-xs muted">Coba ubah filter bulan/kategori</div></div>`;
           if(pagEl){ pagEl.classList.add("hidden"); pagEl.innerHTML=""; }
           return;
         }
-        const grouped = {};
-        pageTxs.forEach((t) => {
-          if (!grouped[t.date]) grouped[t.date] = [];
-          grouped[t.date].push(t);
-        });
+        const page = pages[state.txPage - 1];
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-        list.innerHTML = Object.keys(grouped)
-          .sort((a, b) => new Date(b) - new Date(a))
-          .map((date) => {
-            const dayTxs = grouped[date];
+        list.innerHTML = page.days
+          .map(({ date, txs: dayTxs }) => {
             const save = date < todayStr ? daySaving(date) : null;
             const saveHtml =
               save == null || save === 0
@@ -3100,12 +3114,12 @@
           .join("");
         // pagination
         if(pagEl){
-          if(total <= per){
+          if(totalPages <= 1){
             pagEl.classList.add("hidden");
             pagEl.innerHTML="";
           } else {
             pagEl.classList.remove("hidden");
-            const from = start+1, to=Math.min(start+per, total);
+            const from = page.from, to=page.to;
             let pagesHtml="";
             // window 5 pages
             let startPage=Math.max(1, state.txPage-2);

@@ -152,9 +152,16 @@ export default {
       return fetch(url,{...opts,headers:{...(opts.headers||{}),authorization:`Bearer ${tok}`}});
     };
     const fsList = async (col)=>{
-      const r=await fsFetch(`${FS}/${col}?pageSize=1000`).then(r=>r.json());
-      if(r.error) throw new Error(r.error.message);
-      return (r.documents||[]).map(unpack);
+      // ikuti nextPageToken — Firestore REST hanya balikin ~300 doc per halaman
+      const out=[];
+      let token=null;
+      do{
+        const r=await fsFetch(`${FS}/${col}?pageSize=300${token?`&pageToken=${encodeURIComponent(token)}`:""}`).then(r=>r.json());
+        if(r.error) throw new Error(r.error.message);
+        out.push(...(r.documents||[]).map(unpack));
+        token=r.nextPageToken||null;
+      }while(token);
+      return out;
     };
     const fsAdd = async (col,obj,docId)=>{
       const fields={};
@@ -183,22 +190,33 @@ export default {
     };
     const delSession = async (chatId)=>{ await fetch(`${FS}/telegram_sessions/${chatId}`,{method:"DELETE"}).catch(()=>{}); };
 
+    // angka saldo = rumus yang sama dgn web (hero public/index.html) biar tele & web sinkron:
+    // income ber-type received - expense = saldo lifetime; piutang (income non-received) dipisah
+    const hitungSaldo = (txs, ym)=>{
+      let masuk=0, keluar=0, piutang=0, bulanMasuk=0, bulanKeluar=0;
+      for(const t of txs){
+        const a=Number(t.amount)||0;
+        const bulan=String(t.date||"").startsWith(ym);
+        if(t.type==="expense"){ keluar+=a; if(bulan) bulanKeluar+=a; }
+        else if(t.type==="income"){
+          if((t.status||"received")==="received"){ masuk+=a; if(bulan) bulanMasuk+=a; }
+          else piutang+=a;
+        }
+      }
+      return {masuk,keluar,piutang,bulanMasuk,bulanKeluar};
+    };
     const saldoDompet = async ()=>{
       const txs=await fsList("transactions");
-      let masuk=0, keluar=0, piutang=0;
-      for(const t of txs){
-        if(t.type==="expense") keluar+=Number(t.amount)||0;
-        else if(t.status==="pending") piutang+=Number(t.amount)||0;
-        else if((t.status||"received")==="received") masuk+=Number(t.amount)||0;
-      }
-      return {masuk, keluar, piutang};
+      // shortcut: bulan dihitung pakai WIB (UTC+7); ubah kalau user ganti timezone
+      const wib=new Date(Date.now()+7*36e5);
+      const ym=`${wib.getUTCFullYear()}-${String(wib.getUTCMonth()+1).padStart(2,"0")}`;
+      return hitungSaldo(txs, ym);
     };
     const saldoText = async ()=>{
-      const {masuk,keluar,piutang}=await saldoDompet();
-      let out=`💰 <b>Saldo dompet</b>\n\nMasuk: ${fmtRp(masuk)}\nKeluar: ${fmtRp(keluar)}`;
-      if(piutang) out+=`\nPiutang: ${fmtRp(piutang)}`;
-      out+=`\n\nSaldo kas: <b>${fmtRp(masuk-keluar)}</b>`;
-      if(piutang) out+=`\nSaldo + piutang: <b>${fmtRp(masuk-keluar+piutang)}</b>`;
+      const {masuk,keluar,piutang,bulanMasuk,bulanKeluar}=await saldoDompet();
+      let out=`💰 <b>Saldo dompet</b>\n\nSaldo: <b>${fmtRp(masuk-keluar)}</b>`;
+      out+=`\nMasuk (bulan ini): ${fmtRp(bulanMasuk)}\nKeluar (bulan ini): ${fmtRp(bulanKeluar)}`;
+      if(piutang) out+=`\nPiutang: ${fmtRp(piutang)}\nSaldo + piutang: <b>${fmtRp(masuk-keluar+piutang)}</b>`;
       return out;
     };
 
